@@ -98,7 +98,7 @@ export function Navbar({
             : 'border-b border-transparent bg-white/40 backdrop-blur-md',
         )}
       >
-        <div className="container-x flex h-16 items-center justify-between gap-6">
+        <div className="container-x flex h-16 items-center justify-between gap-3 sm:gap-4 md:gap-6">
           <Logo src={logoUrl} heightPx={logoHeightPx} />
 
           <nav className="hidden lg:flex items-center gap-1" aria-label={t('primary')}>
@@ -121,7 +121,7 @@ export function Navbar({
             </Button>
           </div>
 
-          <div className="lg:hidden flex items-center gap-2">
+          <div className="lg:hidden flex items-center gap-1.5 sm:gap-2">
             <LocaleSwitcher current={locale} />
             <button
               type="button"

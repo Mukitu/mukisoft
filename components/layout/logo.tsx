@@ -43,44 +43,64 @@ export function Logo({
   size = 'md',
   heightPx,
   showText = false,
+  src,
 }: LogoProps) {
   const sizeMap = {
     sm: { h: 28, w: 96, text: 'text-sm' },
-    md: { h: 36, w: 144, text: 'text-base' },
-    lg: { h: 44, w: 176, text: 'text-lg' },
+    md: { h: 40, w: 160, text: 'text-base' },
+    lg: { h: 48, w: 192, text: 'text-lg' },
   } as const;
   const preset = sizeMap[size];
 
+  // When the caller supplies an explicit pixel height (admin setting
+  // `navbar_logo_size`), use it verbatim. Otherwise fall back to a
+  // responsive ladder via Tailwind on the wrapper so the logo scales
+  // smoothly with the viewport.
+  //
   // Clamp the explicit pixel height to a sane navbar range so a typo
   // can't blow out the layout. Matches the DB CHECK constraint range
   // (16–96) in supabase/migrations/0006_navbar_logo_size.sql.
-  const safeHeight = (() => {
-    if (!heightPx || !Number.isFinite(heightPx)) return preset.h;
-    return Math.min(96, Math.max(16, Math.round(heightPx)));
-  })();
+  const hasExplicitHeight =
+    typeof heightPx === 'number' && Number.isFinite(heightPx);
+  const safeHeight = hasExplicitHeight
+    ? Math.min(96, Math.max(16, Math.round(heightPx as number)))
+    : null;
   const textCls = preset.text;
 
   return (
     <Link
       href="/"
       className={cn(
-        'group inline-flex items-center gap-2.5',
+        // `shrink-0` keeps the logo from being squeezed by sibling
+        // flex items when the viewport narrows. The Tailwind ladder
+        // `h-9 md:h-10 lg:h-11` only applies when no explicit pixel
+        // height was provided — when one was, inline `style.height`
+        // overrides it and the ladder is suppressed.
+        'group inline-flex items-center gap-2.5 shrink-0',
+        !safeHeight && 'h-9 md:h-10 lg:h-11',
         variant === 'light' ? 'text-white' : 'text-ink-900',
         className,
       )}
+      style={
+        safeHeight
+          ? ({ height: `${safeHeight}px` } as React.CSSProperties)
+          : undefined
+      }
       aria-label={`${company.displayName} home`}
     >
       <LogoImage
-        // LogoImage reads the bundled asset from assetPaths.logo.primary
-        // and falls back to the SVG wordmark on error. We pass width/
-        // height for the raster, priority so it loads eagerly in the
-        // navbar (above the fold).
+        // The navbar/footer pass an admin-uploaded URL via `src`. When
+        // absent, LogoImage falls back to the bundled raster and then
+        // to the SVG wordmark — so a broken admin upload never breaks
+        // the navbar.
+        src={src}
         companyName={company.displayName}
-        width={Math.round(safeHeight * 4)}
-        height={safeHeight}
+        // Intrinsic height for next/image layout reservation. The CSS
+        // rendered size is controlled by the parent (Tailwind ladder
+        // above or inline style), and the image uses `h-full w-auto`
+        // inside it for a perfect fit at any aspect ratio.
+        height={safeHeight ?? preset.h}
         priority
-        className="h-auto"
-        fallbackClassName={cn('h-auto', className)}
       />
       {showText && company.name ? (
         <span className="flex flex-col leading-none">

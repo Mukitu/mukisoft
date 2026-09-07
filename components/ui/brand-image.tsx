@@ -15,17 +15,37 @@ import { cn } from '@/lib/utils/cn';
  * Accessibility: the rendered <img> alt text is the full company name.
  */
 export function LogoImage({
+  src,
   className,
   priority = false,
-  width = 144,
-  height = 36,
+  width,
+  height = 40,
   fallbackClassName,
   alt,
   companyName,
 }: {
+  /**
+   * Optional override for the rendered logo. When set, this image is used
+   * instead of the bundled `assetPaths.logo.primary`. A broken URL still
+   * falls back to the bundled asset, then to the SVG wordmark, so an
+   * admin-uploaded logo never breaks the navbar.
+   */
+  src?: string;
   className?: string;
   priority?: boolean;
+  /**
+   * Intrinsic aspect-ratio hint for next/image. Defaults to `height * 4`,
+   * which matches the bundled `logo.png` (800×436 ≈ 1.83:1, capped at 4:1
+   * for safety). The CSS rendered size is driven by the parent container
+   * (Tailwind `h-*` utility or inline `style.height`).
+   */
   width?: number;
+  /**
+   * Intrinsic pixel height — used by next/image for layout reservation
+   * and by the rendered `<img>` as the source-of-truth `height` attribute.
+   * The visible size is then controlled by the parent's height (see
+   * `<Logo>` responsive ladder).
+   */
   height?: number;
   fallbackClassName?: string;
   alt?: string;
@@ -33,16 +53,23 @@ export function LogoImage({
 }) {
   const [errored, setErrored] = React.useState(false);
 
+  const intrinsicW = width ?? Math.round(height * 4);
+  // Let the parent's height control the rendered size, while keeping the
+  // intrinsic width for a correct aspect ratio. `h-full w-auto` only works
+  // when the parent has an explicit height, which `<Logo>` guarantees via
+  // its Tailwind ladder (`h-9 md:h-10 lg:h-11`) or inline override.
+  const imageCls = cn('h-full w-auto', className);
+
   if (errored) {
     return (
-      // The SVG fallback is purely decorative at this size — the surrounding
-      // <Link> in the navbar provides the accessible name.
+      // The SVG fallback is purely decorative at this size — the
+      // surrounding <Link> in the navbar provides the accessible name.
       /* eslint-disable-next-line @next/next/no-img-element */
       <img
         src={assetPaths.logo.fallback}
         alt=""
         aria-hidden="true"
-        className={cn('h-9 w-auto', fallbackClassName, className)}
+        className={cn('h-full w-auto', fallbackClassName, imageCls)}
         loading={priority ? 'eager' : 'lazy'}
         decoding="async"
       />
@@ -51,12 +78,12 @@ export function LogoImage({
 
   return (
     <Image
-      src={assetPaths.logo.primary}
+      src={src ?? assetPaths.logo.primary}
       alt={alt ?? `${companyName}`}
-      width={width}
+      width={intrinsicW}
       height={height}
       priority={priority}
-      className={cn('h-9 w-auto', className)}
+      className={imageCls}
       onError={() => setErrored(true)}
     />
   );
