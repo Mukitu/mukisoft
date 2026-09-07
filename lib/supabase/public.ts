@@ -1,7 +1,9 @@
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
+import { createClient, type SupabaseClient as SupabaseJsClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from './server';
 import { applyTranslations } from '@/lib/i18n/apply-translations';
+import { SUPABASE_ENV, isSupabaseConfigured } from './env';
 import type { Locale } from '@/lib/i18n/config';
 import type {
   AboutPage,
@@ -45,6 +47,29 @@ function getClient(): SupabaseClient | null {
   }
 }
 
+/**
+ * Public-read Supabase client. Uses the bare `@supabase/supabase-js`
+ * package with only the anon key — it never touches cookies and is
+ * therefore safe to call from inside `unstable_cache(...)` (which
+ * forbids any dynamic-data source like `cookies()`/`headers()`).
+ *
+ * RLS on the public tables is permissive for the anon role, so we get
+ * the same rows the public site would see.
+ *
+ * The module-level memoisation below keeps us from constructing a
+ * client per cache call.
+ */
+let _publicClient: SupabaseJsClient | null = null;
+function getPublicClient(): SupabaseJsClient | null {
+  if (_publicClient) return _publicClient;
+  if (!isSupabaseConfigured()) return null;
+  _publicClient = createClient(SUPABASE_ENV.url, SUPABASE_ENV.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { 'x-application-name': 'mukisoft-public' } },
+  });
+  return _publicClient;
+}
+
 async function safeQuery<T>(fn: () => PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<{
   data: T | null;
   error: string | null;
@@ -71,7 +96,7 @@ export const fetchSiteSettings = cache(async (locale: Locale = 'en'): Promise<Si
   // so en and bn get separate entries.
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return null;
       const { data } = await safeQuery<SiteSetting | null>(() =>
         supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
@@ -88,7 +113,7 @@ export const fetchSiteSettings = cache(async (locale: Locale = 'en'): Promise<Si
 export async function fetchPublishedAbout(locale: Locale = 'en'): Promise<AboutPage | null> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return null;
       const { data } = await safeQuery<AboutPage | null>(() =>
         supabase
@@ -111,7 +136,7 @@ export async function fetchPublishedAbout(locale: Locale = 'en'): Promise<AboutP
 export async function fetchPublishedLeadership(locale: Locale = 'en'): Promise<Leadership[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<Leadership[] | null>(() =>
         supabase
@@ -130,7 +155,7 @@ export async function fetchPublishedLeadership(locale: Locale = 'en'): Promise<L
 export async function fetchPublishedTeam(locale: Locale = 'en'): Promise<TeamMember[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<TeamMember[] | null>(() =>
         supabase
@@ -149,7 +174,7 @@ export async function fetchPublishedTeam(locale: Locale = 'en'): Promise<TeamMem
 export async function fetchPublishedProcess(locale: Locale = 'en'): Promise<ProcessStep[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<ProcessStep[] | null>(() =>
         supabase.from('process_steps').select('*').eq('is_published', true).order('display_order', { ascending: true }),
@@ -164,10 +189,12 @@ export async function fetchPublishedProcess(locale: Locale = 'en'): Promise<Proc
 export async function fetchPublishedCareers(locale: Locale = 'en'): Promise<Career[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
+      // careers has no display_order column — order by updated_at desc
+      // so freshly published roles surface first.
       const { data } = await safeQuery<Career[] | null>(() =>
-        supabase.from('careers').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+        supabase.from('careers').select('*').eq('is_published', true).order('updated_at', { ascending: false }),
       );
       return applyTranslations(data ?? [], 'career_role', locale);
     },
@@ -179,7 +206,7 @@ export async function fetchPublishedCareers(locale: Locale = 'en'): Promise<Care
 export async function fetchPublishedPortfolio(locale: Locale = 'en'): Promise<PortfolioProject[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<PortfolioProject[] | null>(() =>
         supabase.from('portfolio_projects').select('*').eq('is_published', true).order('display_order', { ascending: true }),
@@ -194,7 +221,7 @@ export async function fetchPublishedPortfolio(locale: Locale = 'en'): Promise<Po
 export async function fetchPortfolioBySlug(slug: string, locale: Locale = 'en'): Promise<PortfolioProject | null> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return null;
       const { data } = await safeQuery<PortfolioProject | null>(() =>
         (supabase.from('portfolio_projects') as any)
@@ -215,7 +242,7 @@ export async function fetchPortfolioBySlug(slug: string, locale: Locale = 'en'):
 export async function fetchBlogCategories(locale: Locale = 'en'): Promise<BlogCategory[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<BlogCategory[] | null>(() =>
         (supabase.from('blog_categories') as any).select('*').order('name', { ascending: true }),
@@ -230,7 +257,7 @@ export async function fetchBlogCategories(locale: Locale = 'en'): Promise<BlogCa
 export async function fetchBlogTags(locale: Locale = 'en'): Promise<BlogTag[]> {
   return unstable_cache(
     async () => {
-      const supabase = getClient();
+      const supabase = getPublicClient();
       if (!supabase) return [];
       const { data } = await safeQuery<BlogTag[] | null>(() =>
         (supabase.from('blog_tags') as any).select('*').order('name', { ascending: true }),
@@ -252,7 +279,7 @@ export async function fetchPublishedBlogPosts(
   } = {},
 ): Promise<Array<BlogPost & { category: BlogCategory | null; tags: BlogTag[] }>> {
   const locale: Locale = options.locale ?? 'en';
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const limit = options.limit ?? 50;
   let query: any = (supabase.from('blog_posts') as any)
@@ -333,7 +360,7 @@ export async function fetchBlogPostBySlug(
   | (BlogPost & { category: BlogCategory | null; tags: BlogTag[]; author_email: string | null })
   | null
 > {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return null;
   const { data, error } = await (supabase.from('blog_posts') as any)
     .select('*, blog_categories(*), admin_users(email)')
@@ -367,7 +394,7 @@ export async function fetchBlogPostBySlug(
 }
 
 export async function fetchAllPublishedBlogSlugs(): Promise<Array<{ slug: string; updated_at: string }>> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<Array<{ slug: string; updated_at: string }> | null>(() =>
     (supabase.from('blog_posts') as any)
@@ -390,7 +417,7 @@ export async function fetchAllPublishedBlogSlugs(): Promise<Array<{ slug: string
  */
 function buildStorageUrl(path: string | null | undefined): string | null {
   if (!path) return null;
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return null;
   const { data } = supabase.storage.from('mukisoft-media').getPublicUrl(path);
   return data.publicUrl;
@@ -401,7 +428,7 @@ export type GalleryEventWithCover = GalleryEvent & {
 };
 
 export async function fetchPublishedGalleryEvents(locale: Locale = 'en'): Promise<GalleryEventWithCover[]> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<GalleryEvent[] | null>(() =>
     (supabase.from('gallery_events') as any)
@@ -418,7 +445,7 @@ export async function fetchPublishedGalleryEvents(locale: Locale = 'en'): Promis
 }
 
 export async function fetchPublishedGallerySlugs(): Promise<Array<{ slug: string; updated_at: string }>> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<Array<{ slug: string; updated_at: string }> | null>(() =>
     (supabase.from('gallery_events') as any)
@@ -432,7 +459,7 @@ export async function fetchPublishedGallerySlugs(): Promise<Array<{ slug: string
 export type GalleryImageWithUrl = GalleryImage & { public_url: string };
 
 export async function fetchGalleryImagesForEvent(eventId: string, locale: Locale = 'en'): Promise<GalleryImageWithUrl[]> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<GalleryImage[] | null>(() =>
     (supabase.from('gallery_images') as any)
@@ -453,7 +480,7 @@ export type GalleryEventDetail = GalleryEventWithCover & {
 };
 
 export async function fetchGalleryEventBySlug(slug: string, locale: Locale = 'en'): Promise<GalleryEventDetail | null> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return null;
   const { data: row } = await safeQuery<GalleryEvent | null>(() =>
     (supabase.from('gallery_events') as any)
@@ -482,7 +509,7 @@ export type ResearchPaperWithUrls = ResearchPaper & {
 };
 
 export async function fetchPublishedResearchPapers(locale: Locale = 'en'): Promise<ResearchPaperWithUrls[]> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<ResearchPaper[] | null>(() =>
     (supabase.from('research_papers') as any)
@@ -500,7 +527,7 @@ export async function fetchPublishedResearchPapers(locale: Locale = 'en'): Promi
 }
 
 export async function fetchPublishedResearchSlugs(): Promise<Array<{ slug: string; updated_at: string }>> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<Array<{ slug: string; updated_at: string }> | null>(() =>
     (supabase.from('research_papers') as any)
@@ -512,7 +539,7 @@ export async function fetchPublishedResearchSlugs(): Promise<Array<{ slug: strin
 }
 
 export async function fetchResearchPaperAuthors(paperId: string): Promise<ResearchPaperAuthor[]> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return [];
   const { data } = await safeQuery<ResearchPaperAuthor[] | null>(() =>
     (supabase.from('research_paper_authors') as any)
@@ -529,7 +556,7 @@ export type ResearchPaperDetail = ResearchPaperWithUrls & {
 };
 
 export async function fetchResearchPaperBySlug(slug: string, locale: Locale = 'en'): Promise<ResearchPaperDetail | null> {
-  const supabase = getClient();
+  const supabase = getPublicClient();
   if (!supabase) return null;
   const { data: row } = await safeQuery<ResearchPaper | null>(() =>
     (supabase.from('research_papers') as any)

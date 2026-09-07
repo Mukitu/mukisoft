@@ -1,6 +1,8 @@
 import 'server-only';
+import { createClient, type SupabaseClient as SupabaseJsClient } from '@supabase/supabase-js';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/admin';
+import { SUPABASE_ENV, isSupabaseConfigured } from '@/lib/supabase/env';
 import { defaultLocale, type Locale } from './config';
 import {
   ARRAY_FIELDS,
@@ -124,6 +126,24 @@ export async function applyJsonTranslation<T>(
 }
 
 /**
+ * Public-read Supabase client for translation lookups. The
+ * `translations` table is fully readable to the anon role (it's used
+ * to render the public site), so we use a bare anon client here to
+ * avoid calling `cookies()` from inside `unstable_cache(...)` —
+ * which is forbidden by Next.js.
+ */
+let _publicTranslationClient: SupabaseJsClient | null = null;
+function getPublicTranslationClient(): SupabaseJsClient | null {
+  if (_publicTranslationClient) return _publicTranslationClient;
+  if (!isSupabaseConfigured()) return null;
+  _publicTranslationClient = createClient(SUPABASE_ENV.url, SUPABASE_ENV.anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { 'x-application-name': 'mukisoft-i18n' } },
+  });
+  return _publicTranslationClient;
+}
+
+/**
  * Internal: load published translations for a batch of (entity, ids, fields).
  */
 async function loadTranslations(
@@ -132,7 +152,20 @@ async function loadTranslations(
   fields: readonly string[],
   locale: Locale,
 ): Promise<Map<string, TranslationRow>> {
-  const supabase = createSupabaseServerClient();
+  // Try the cookie-bound server client first (works when called from
+  // a Server Component outside any cache). If that throws (because
+  // we're inside `unstable_cache(...)`), fall back to the public anon
+  // client — both yield the same rows because translations are public.
+  let supabase: SupabaseJsClient | null;
+  try {
+    supabase = (createSupabaseServerClient() as unknown) as SupabaseJsClient | null;
+    if (!supabase) {
+      supabase = getPublicTranslationClient();
+    }
+  } catch {
+    supabase = getPublicTranslationClient();
+  }
+  if (!supabase) return new Map();
   const { data, error } = await (supabase.from('translations') as any)
     .select('entity_id, field_name, translated_value, source_hash, source_value')
     .eq('entity_type', entityType)
