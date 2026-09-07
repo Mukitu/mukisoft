@@ -264,6 +264,78 @@ Deploy হওয়ার পর Supabase-এ যান:
 
 ---
 
+## 🖼️ Part 7 — Facebook / WhatsApp / LinkedIn Link Preview (OG Image) Fix
+
+### সমস্যাটা কী?
+
+আপনি `https://mukisoft.tech/en` link Facebook-এ বা WhatsApp-এ share করলে কোনো **thumbnail image** দেখায় না, বা শুধু ছোট্ট একটা ফাঁকা box দেখায়। এটা Open Graph (`og:*`) meta tags ঠিকমতো সেট না থাকলে হয়।
+
+### কেন হয়?
+
+৩টা প্রধান কারণ:
+1. **OG image টা SVG ফরম্যাটে ছিল** — Facebook, WhatsApp, LinkedIn, Slack, Discord কেউই SVG support করে না। তাদের **PNG বা JPG** দরকার।
+2. **Relative URL** — আগে `/og.svg` relative path ছিল, কিন্তু কিছু crawler (WhatsApp) `metadataBase` resolve করে না।
+3. **`og:image:width`, `og:image:height`, `og:image:alt`** — এগুলো ছাড়া Facebook শুধু "small preview" বা কিছুই দেখায় না।
+
+### ✅ এই repo-তে যা ফিক্স করা হয়েছে
+
+| ফাইল | কী করা হয়েছে |
+|---|---|
+| `public/og.png` | নতুন — 1200×630 PNG (rsvg-convert দিয়ে SVG থেকে generate) |
+| `public/og.jpg` | নতুন — 1200×630 JPG fallback (কিছু crawler PNG reject করে) |
+| `lib/config/assets.ts` | `assetPaths.og.default` এখন `/og.png` |
+| `app/[locale]/layout.tsx` | `openGraph.images` এ PNG + JPG দুটোই আছে, width/height/alt/type/secureUrl সব সেট, URL **absolute** |
+
+### 🧪 ফিক্স কাজ করছে কিনা যেভাবে পরীক্ষা করবেন
+
+Deploy হওয়ার পর:
+
+1. **Facebook Sharing Debugger:** https://developers.facebook.com/tools/debug/
+   - আপনার URL paste করুন (যেমন `https://mukisoft.tech/en`)
+   - **"Debug"** চাপুন
+   - নিচে **"Open Graph"** সেকশনে image preview দেখাবে
+   - প্রথমবার cache miss হতে পারে — **"Scrape Again"** চাপুন
+
+2. **Twitter Card Validator:** https://cards-dev.twitter.com/validator
+   - URL দিন, **Preview Card** দেখান
+
+3. **LinkedIn Post Inspector:** https://www.linkedin.com/post-inspector/
+   - URL দিন, **Inspect** চাপুন
+
+4. **OpenGraph.xyz:** https://www.opengraph.xyz/
+   - যেকোনো URL paste করলে সব platform-এর preview একসাথে দেখায়
+
+5. **Manual WhatsApp test:**
+   - নিজের নম্বরে `https://mukisoft.tech/en` পাঠান
+   - Link-এ tap না করে **long-press / preview** দেখুন — thumbnail আসা উচিত
+
+### 🆘 যদি এখনও thumbnail না আসে
+
+| কারণ | সমাধান |
+|---|---|
+| পুরানো cached preview | Facebook Debugger → **"Scrape Again"** চাপুন |
+| OG image publicly accessible না | `https://mukisoft.tech/og.png` browser-এ open করুন — image আসা উচিত |
+| HTTPS না | Vercel automatic HTTPS দেয়, কিন্তু custom domain DNS verify করুন |
+| Image too small (< 200px) | এই fix-এ image 1200×630 — সবচেয়ে বড় recommended size |
+| Image file size too big (> 8MB) | এই fix-এ PNG 142KB, JPG 71KB — safe limit-এ আছে |
+| Crawler rate limit | ৫-১০ মিনিট wait করে আবার try করুন |
+
+### 🎨 Custom OG Image চাইলে
+
+`public/og.svg` ফাইলটা edit করুন (আপনার brand color/text/logo দিয়ে), তারপর:
+
+```bash
+rsvg-convert -w 1200 -h 630 public/og.svg -o public/og.png
+convert public/og.png -quality 90 -strip public/og.jpg
+git add public/og.svg public/og.png public/og.jpg
+git commit -m "Update OG thumbnail"
+git push
+```
+
+Vercel auto-redeploy হবে। তারপর Facebook Debugger দিয়ে cache refresh করুন।
+
+---
+
 ## 📞 Need Help?
 
 - Vercel docs: https://vercel.com/docs

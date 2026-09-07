@@ -51,7 +51,18 @@ export const assetPaths = {
     fallback: '/images/team/placeholder.svg',
   },
   og: {
-    default: '/og.svg',
+    /**
+     * Default Open Graph image used by Facebook, WhatsApp, LinkedIn, X, etc.
+     *
+     * Why a PNG instead of the og.svg source: most social crawlers
+     * (Facebook, WhatsApp, LinkedIn, Slack, Discord, Telegram) do NOT
+     * render SVG files. They require a raster image — PNG or JPG.
+     * The PNG here is generated at build-time from `public/og.svg`
+     * via rsvg-convert; the SVG stays as the editable source.
+     */
+    default: '/og.png',
+    /** JPEG fallback — used if a crawler refuses PNG. */
+    fallback: '/og.jpg',
   },
   /**
    * Founder portrait path.

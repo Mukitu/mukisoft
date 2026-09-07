@@ -84,9 +84,28 @@ export async function generateMetadata({
       title: cfg.title,
       description: cfg.description,
       siteName: company.displayName,
+      // Facebook, WhatsApp, LinkedIn, Slack, Discord all read `og:image`
+      // first. We supply BOTH the PNG and a JPG fallback so the crawler
+      // picks whichever it supports. Dimensions and alt text are required
+      // by Facebook's crawler for a large preview card — without them
+      // it serves a tiny thumbnail (or none at all).
+      //
+      // We use the FULL absolute URL here (not just `/og.png`). Some
+      // crawlers (notably WhatsApp) refuse to resolve relative URLs
+      // against `metadataBase` and silently drop the image. Belt and braces.
       images: [
         {
-          url: cfg.ogImage,
+          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          secureUrl: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          type: 'image/png',
+          width: 1200,
+          height: 630,
+          alt: `${company.displayName} — ${company.tagline}`,
+        },
+        {
+          url: `${baseUrl}/og.jpg`,
+          secureUrl: `${baseUrl}/og.jpg`,
+          type: 'image/jpeg',
           width: 1200,
           height: 630,
           alt: `${company.displayName} — ${company.tagline}`,
@@ -98,7 +117,14 @@ export async function generateMetadata({
       title: cfg.title,
       description: cfg.description,
       creator: company.social.x,
-      images: [cfg.ogImage],
+      // Twitter reads `twitter:image` separately. Same dimensions rule
+      // applies — a large card needs >= 300x157, we ship 1200x630.
+      images: [
+        {
+          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          alt: `${company.displayName} — ${company.tagline}`,
+        },
+      ],
     },
     robots: {
       index: true,
