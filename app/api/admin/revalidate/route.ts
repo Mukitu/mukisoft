@@ -148,6 +148,13 @@ export async function POST(request: Request) {
 
   // Flush App Router page caches (per-locale)
   for (const pathTemplate of pathSet) {
+    // First the dynamic pattern (matches all locales at once)
+    try {
+      revalidatePath(pathTemplate);
+    } catch {
+      /* ignore — some patterns aren't valid */
+    }
+    // Then each concrete locale path (more reliable on Vercel edge)
     for (const locale of requestedLocales) {
       revalidatePath(pathTemplate.replace('[locale]', locale));
     }

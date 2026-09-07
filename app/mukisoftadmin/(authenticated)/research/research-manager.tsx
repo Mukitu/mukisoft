@@ -508,7 +508,10 @@ function ResearchEditor({
     cover_image_alt: form.cover_image_alt || null,
     display_order: Number.isFinite(form.display_order) ? Number(form.display_order) : 0,
     is_featured: form.is_featured,
-    published: publish ? true : form.published,
+    // New records default to published so they're visible on the
+    // public site immediately. Existing drafts stay drafts until the
+    // user clicks Publish.
+    published: publish ? true : (form.published || !form.id),
   });
 
   /**

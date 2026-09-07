@@ -107,7 +107,9 @@ export function AboutEditor({ initial }: { initial: AboutPage | null }) {
     cta_description: form.cta_description || null,
     seo_title: form.seo_title || null,
     seo_description: form.seo_description || null,
-    status,
+    // New records default to 'published' so they're visible on the
+    // public site as soon as saved. Existing drafts stay drafts.
+    status: form.id ? status : 'published',
   });
 
   const handleSave = async (status: 'draft' | 'published') => {

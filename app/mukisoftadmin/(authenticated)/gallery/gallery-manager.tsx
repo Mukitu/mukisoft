@@ -458,7 +458,9 @@ function GalleryEditor({
     external_url: form.external_url || null,
     display_order: Number.isFinite(form.display_order) ? Number(form.display_order) : 0,
     is_featured: form.is_featured,
-    is_published: publish ? true : form.is_published,
+    // New records default to published — the user wants them visible
+    // on the public site as soon as they're saved.
+    is_published: publish ? true : (form.is_published || !form.id),
   });
 
   /**

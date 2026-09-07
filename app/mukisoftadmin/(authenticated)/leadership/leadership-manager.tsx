@@ -290,7 +290,10 @@ function LeadershipEditor({
     linkedin_url: form.linkedin_url || null,
     github_url: form.github_url || null,
     display_order: Number.isFinite(form.display_order) ? Number(form.display_order) : 0,
-    is_published: publish ? true : form.is_published,
+    // New records default to published — visible on the website as
+    // soon as they're saved. Existing drafts stay drafts until the
+    // user explicitly clicks Publish.
+    is_published: publish ? true : (form.is_published || !form.id),
   });
 
   const save = async (publish: boolean) => {

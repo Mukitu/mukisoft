@@ -286,7 +286,10 @@ function TeamEditor({
     github_url: form.github_url || null,
     x_url: form.x_url || null,
     display_order: Number.isFinite(form.display_order) ? Number(form.display_order) : 0,
-    is_published: publish ? true : form.is_published,
+    // New records default to published — the user wants their new
+    // content visible on the public site. Existing drafts stay drafts
+    // until the user clicks Publish.
+    is_published: publish ? true : (form.is_published || !form.id),
   });
 
   const save = async (publish: boolean) => {

@@ -351,7 +351,9 @@ function PortfolioEditor({
     project_url: form.project_url || null,
     display_order: Number.isFinite(form.display_order) ? Number(form.display_order) : 0,
     is_featured: form.is_featured,
-    is_published: publish ? true : form.is_published,
+    // New records default to published so they're visible on the
+    // public site as soon as saved. Existing drafts stay drafts.
+    is_published: publish ? true : (form.is_published || !form.id),
   });
 
   const save = async (publish: boolean) => {

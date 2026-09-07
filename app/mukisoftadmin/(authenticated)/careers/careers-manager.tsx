@@ -281,7 +281,10 @@ function CareerEditor({
       .map((line) => line.trim())
       .filter(Boolean),
     application_email: form.application_email || null,
-    is_published: publish ? true : form.is_published,
+    // Save as draft only keeps existing records in draft state.
+    // New records (form.id is undefined) ALWAYS publish by default —
+    // the user obviously wants their new content visible on the site.
+    is_published: publish ? true : (form.is_published || !form.id),
   });
 
   const save = async (publish: boolean) => {
