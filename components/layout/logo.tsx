@@ -26,6 +26,14 @@ type LogoProps = {
    * the navbar and footer treat the brand as logo-only.
    */
   showText?: boolean;
+  /**
+   * When `true`, the logo image is inverted to white (via
+   * `filter: brightness(0) invert(1)`) so a dark raster logo remains
+   * legible on dark backgrounds like the footer. The wrapper text
+   * color is already controlled by `variant="light"`. Defaults to
+   * `false`.
+   */
+  invert?: boolean;
 };
 
 /**
@@ -44,6 +52,7 @@ export function Logo({
   heightPx,
   showText = false,
   src,
+  invert = false,
 }: LogoProps) {
   const sizeMap = {
     sm: { h: 28, w: 96, text: 'text-sm' },
@@ -101,6 +110,13 @@ export function Logo({
         // inside it for a perfect fit at any aspect ratio.
         height={safeHeight ?? preset.h}
         priority
+        // When `invert` is set (footer on a dark background), force the
+        // raster to render as white. The CSS filter is applied via the
+        // shared utility in `lib/utils/cn`-adjacent tailwind plugin —
+        // see `.logo-invert` below. We keep transparency intact so a
+        // PNG with a transparent background still shows as a white
+        // silhouette against the dark footer.
+        className={invert ? 'brightness-0 invert' : undefined}
       />
       {showText && company.name ? (
         <span className="flex flex-col leading-none">

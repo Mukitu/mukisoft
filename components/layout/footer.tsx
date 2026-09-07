@@ -21,7 +21,7 @@ export async function Footer({ logoUrl, locale }: { logoUrl?: string; locale?: L
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-center">
             {/* LEFT — Logo + Brand */}
             <div className="flex items-center gap-3">
-              <Logo variant="light" size="sm" src={logoUrl} />
+              <Logo variant="light" size="sm" src={logoUrl} invert />
               <div className="hidden h-8 w-px bg-white/10 md:block" aria-hidden />
               <p className="hidden text-[11px] leading-snug text-white/55 md:block md:max-w-[200px]">
                 {company.tagline}
