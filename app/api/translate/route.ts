@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag, revalidatePath } from 'next/cache';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { isSupabaseConfigured } from '@/lib/supabase/env';
 import { hashSource, translateText, type TargetLang } from '@/lib/translate/provider';
 import {
   isTranslatableEntity,
+  ENTITY_TABLE_MAP,
   type TranslatableEntityType,
 } from '@/lib/i18n/translatable-fields';
 
@@ -79,6 +81,7 @@ export async function POST(request: Request) {
         if (error) {
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
+        flushEntityCache(entityType as TranslatableEntityType);
         return NextResponse.json({ ok: true, translated, provider, status: 'generated' });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Translation failed';
@@ -123,6 +126,7 @@ export async function POST(request: Request) {
           { onConflict: 'entity_type,entity_id,field_name,target_lang' },
         );
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      flushEntityCache(entityType as TranslatableEntityType);
       return NextResponse.json({ ok: true, status: 'edited' });
     }
 
@@ -137,6 +141,7 @@ export async function POST(request: Request) {
         .eq('field_name', fieldName)
         .eq('target_lang', 'bn');
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      flushEntityCache(entityType as TranslatableEntityType);
       return NextResponse.json({ ok: true, status: 'published' });
     }
 
@@ -148,6 +153,7 @@ export async function POST(request: Request) {
         .eq('field_name', fieldName)
         .eq('target_lang', 'bn');
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      flushEntityCache(entityType as TranslatableEntityType);
       return NextResponse.json({ ok: true, status: 'generated' });
     }
 
@@ -176,10 +182,73 @@ export async function POST(request: Request) {
         .eq('field_name', fieldName)
         .eq('target_lang', 'bn');
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      flushEntityCache(entityType as TranslatableEntityType);
       return NextResponse.json({ ok: true, status: 'deprecated' });
     }
 
     default:
       return NextResponse.json({ error: `Unknown op: ${op}` }, { status: 400 });
+  }
+}
+
+/**
+ * Flush the public-site cache for an entity that just had a translation
+ * published/saved. Translating a field means the rendered text on the
+ * public page changes — without this, the bn locale would still serve
+ * the English source (or the previous translation) until the 60s
+ * revalidate window.
+ *
+ * `ENTITY_TABLE_MAP` resolves the entity type (e.g. `blog_post`) to the
+ * actual Supabase table name (e.g. `blog_posts`) so we can reuse the
+ * same tag/path mapping as `/api/admin/revalidate`.
+ */
+const TABLE_TO_TAGS: Record<string, string[]> = {
+  site_settings: ['site-settings'],
+  about_pages: ['about-page'],
+  leadership: ['leadership'],
+  team_members: ['team'],
+  process_steps: ['process'],
+  careers: ['careers'],
+  portfolio_projects: ['portfolio'],
+  blog_posts: ['blog'],
+  blog_categories: ['blog'],
+  blog_tags: ['blog'],
+  blog_post_tags: ['blog'],
+  service_categories: ['services'],
+  services: ['services'],
+  gallery_events: ['gallery'],
+  gallery_images: ['gallery'],
+  research_papers: ['research'],
+  research_paper_authors: ['research'],
+};
+
+const TABLE_TO_PATHS: Record<string, string[]> = {
+  site_settings: ['/[locale]'],
+  about_pages: ['/[locale]', '/[locale]/about'],
+  leadership: ['/[locale]', '/[locale]/about', '/[locale]/founder', '/[locale]/team'],
+  team_members: ['/[locale]', '/[locale]/team'],
+  process_steps: ['/[locale]', '/[locale]/process'],
+  careers: ['/[locale]', '/[locale]/careers'],
+  portfolio_projects: ['/[locale]', '/[locale]/work'],
+  blog_posts: ['/[locale]', '/[locale]/blog'],
+  blog_categories: ['/[locale]', '/[locale]/blog'],
+  blog_tags: ['/[locale]', '/[locale]/blog'],
+  blog_post_tags: ['/[locale]', '/[locale]/blog'],
+  service_categories: ['/[locale]', '/[locale]/services'],
+  services: ['/[locale]', '/[locale]/services'],
+  gallery_events: ['/[locale]', '/[locale]/gallery'],
+  gallery_images: ['/[locale]', '/[locale]/gallery'],
+  research_papers: ['/[locale]', '/[locale]/research'],
+  research_paper_authors: ['/[locale]', '/[locale]/research'],
+};
+
+function flushEntityCache(entityType: TranslatableEntityType): void {
+  const table = ENTITY_TABLE_MAP[entityType];
+  const tags = TABLE_TO_TAGS[table] ?? [];
+  const paths = TABLE_TO_PATHS[table] ?? [];
+  for (const tag of tags) revalidateTag(tag);
+  // Translations target only the bn locale, so we just revalidate /bn.
+  for (const pathTemplate of paths) {
+    revalidatePath(pathTemplate.replace('[locale]', 'bn'));
   }
 }
