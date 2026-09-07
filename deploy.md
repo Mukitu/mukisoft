@@ -336,6 +336,157 @@ Vercel auto-redeploy হবে। তারপর Facebook Debugger দিয়
 
 ---
 
+## 🚨 Part 8 — "ERR_TUNNEL_CONNECTION_FAILED" / "This site can't be reached" Fix
+
+### সমস্যাটা কী?
+
+Browser-এ `https://www.mukisoft.tech/en/team` visit করলে:
+
+```
+This site can't be reached
+The webpage at https://www.mukisoft.tech/en/team might be temporarily down
+or it may have moved permanently to a new web address.
+ERR_TUNNEL_CONNECTION_FAILED
+```
+
+অথবা `mukisoft.tech`-এ গেলে:
+
+```
+mukisoft.tech's server DNS address could not be found
+ERR_NAME_NOT_RESOLVED
+```
+
+### 🔍 কেন হয়?
+
+এটা **404 / hosting সমস্যা না** — এটা **DNS সমস্যা**। আপনার browser ঠিকই বলছে: domain-টার IP address-ই পাচ্ছে না।
+
+**সবচেয়ে common কারণগুলো:**
+
+1. **Registrar-এ DNS records সেট করা হয়নি।** Domain কিনলেই host হয় না — আপনাকে বলে দিতে হয় "এই domain-টা যাবে এই IP address-এ"।
+2. **Vercel-এ domain add করা হয়নি।** Registrar-এ DNS বসালেই হবে না, Vercel-কেও জানাতে হবে যে আপনার project-এ এই domain-টা যুক্ত।
+3. **Cloudflare / proxy DNS চালু আছে।** কিছু registrar (Cloudflare especially) automatic proxy on করে দেয় — Vercel-এর সাথে সরাসরি connection block হয়ে যায়।
+4. **CAA record allow করছে না।** কিছো registrar-এ SSL issue হয় CAA record-এর কারণে।
+
+### ✅ সমাধান — ধাপে ধাপে (আপনার `mukisoft.tech` এর জন্য)
+
+#### Step 1: Vercel-এ domain যোগ করুন
+
+1. https://vercel.com/dashboard এ যান
+2. আপনার **MukiSoft project** select করুন
+3. **Settings** → **Domains** tab-এ ক্লিক করুন
+4. নিচের input box-এ আপনার domain লিখুন:
+   - `mukisoft.tech` → **Add**
+   - তারপর আবার `www.mukisoft.tech` → **Add**
+5. Vercel আপনাকে DNS records দেখাবে — সেগুলো পরের step-এ লাগবে।
+
+#### Step 2: Registrar-এ DNS Records সেট করুন
+
+আপনার registrar **Namify Domains Inc** (name.store থেকে কেনা)। তাদের control panel-এ login করুন এবং **DNS Management** section-এ যান।
+
+**এই ৩টা record যোগ করুন (বা edit করুন):**
+
+| Type | Name | Value | TTL |
+|---|---|---|---|
+| `A` | `@` | `76.76.21.21` | `Automatic` বা `3600` |
+| `CNAME` | `www` | `cname.vercel-dns.com` | `Automatic` বা `3600` |
+
+> 💡 **Name.store / Namify তে UI কেমন:** "DNS Records" বা "Name Servers" section খুঁজুন। `@` মানে root domain (মানে `mukisoft.tech` itself)। `www` মানে `www.mukisoft.tech`।
+
+#### Step 3: যদি Cloudflare ব্যবহার করেন (Important!)
+
+যদি আপনি domain-টা Cloudflare দিয়ে manage করেন (NS records Cloudflare-এ point করে), তাহলে Cloudflare dashboard-এ:
+
+1. **DNS** → **Records** এ যান
+2. `A` record `mukisoft.tech` → `76.76.21.21` add করুন
+3. `CNAME` record `www` → `cname.vercel-dns.com` add করুন
+4. **Proxy status: DNS only (grey cloud ☁️)** সিলেক্ট করুন — **Proxied (orange cloud 🟠) করবেন না!** Cloudflare proxy Vercel SSL-এর সাথে conflict করে।
+
+#### Step 4: DNS Propagation Wait করুন
+
+DNS records update হতে **৫ মিনিট থেকে ৪৮ ঘণ্টা** লাগতে পারে (সাধারণত ১৫-৩০ মিনিট)।
+
+Verify করুন:
+
+```bash
+# macOS Terminal-এ:
+dig mukisoft.tech +short
+# আউটপুট হওয়া উচিত: 76.76.21.21
+
+dig www.mukisoft.tech +short
+# আউটপুট হওয়া উচিত: cname.vercel-dns.com এর পর যে IP আসে
+```
+
+অথবা browser-এ: https://dnschecker.org/#A/mukisoft.tech
+
+#### Step 5: Vercel SSL Verify করুন
+
+DNS propagation শেষ হলে Vercel dashboard-এ:
+
+1. **Settings** → **Domains** এ ফিরে যান
+2. `mukisoft.tech` এর পাশে **"Valid Configuration"** দেখাবে (হতে ১০-৩০ মিনিট লাগতে পারে)
+3. SSL automatic issue হবে (~১ মিনিট)
+4. ✅ হয়ে গেলে আপনার সাইট HTTPS-এ live!
+
+#### Step 6: Test
+
+Browser-এ যান: **https://mukisoft.tech/en/team**
+
+এখন কাজ করবে। সাথে সাথে:
+- https://mukisoft.tech → automatically /en redirect হবে
+- https://www.mukisoft.tech → mukisoft.tech এ redirect হবে
+- সব page reload (F5) কাজ করবে — 404 আসবে না
+
+### 🆘 Troubleshooting
+
+| সমস্যা | সমাধান |
+|---|---|
+| `dig +short` empty result | DNS records এখনো set হয়নি — registrar-এ ফিরে যান |
+| `dig` shows wrong IP (Cloudflare IP) | Cloudflare proxy off করুন, DNS only mode-এ রাখুন |
+| Vercel-এ "Invalid Configuration" | DNS propagation শেষ হয়নি — ১০-৩০ মিনিট wait করুন |
+| "SSL certificate provisioning failed" | CAA record যোগ করুন: `0 issue "letsencrypt.org"` এবং `0 issuewild "letsencrypt.org"` |
+| Browser "NET::ERR_CERT_AUTHORITY_INVALID" | HSTS cache clear করুন: Chrome-এ `chrome://net-internals/#hsts` → Delete domain |
+| Domain redirects কিন্তু 404 দেখায় | পুরানো browser cache clear করুন, hard reload (Cmd+Shift+R) দিন |
+| `www` কাজ করে কিন্তু root কাজ করে না | `A` record `@` সঠিকভাবে add হয়নি, registrar-এ check করুন |
+| Root কাজ করে কিন্তু `www` কাজ করে না | `CNAME` record `www` missing, যোগ করুন |
+
+### 🧹 Browser Cache Clear করার Quick Steps
+
+DNS পরিবর্তনের পর পুরানো cache থাকতে পারে:
+
+**Chrome:** `Cmd+Shift+Delete` → "Cached images and files" → Clear
+
+**Safari:** Develop menu → Empty Caches (প্রথমে `Cmd+Option+I` দিয়ে enable করুন)
+
+**Firefox:** `Cmd+Shift+Delete` → "Cache" → Clear Now
+
+**Or hard reload:** `Cmd+Shift+R` (Mac) / `Ctrl+Shift+F5` (Windows)
+
+### 🔬 Advanced: Cloudflare ব্যবহার করলে Bonus Settings
+
+যদি আপনি Cloudflare DNS ব্যবহার করেন, তাহলে এই extra settings-গুলো করলে ভালো:
+
+1. **SSL/TLS** → **Full (Strict)** সিলেক্ট করুন
+2. **Speed** → **Rocket Loader** OFF করুন (Next.js এর সাথে conflict করে)
+3. **Caching** → **Browser Cache TTL** → "Respect Existing Headers"
+4. **Network** → **WebSockets** → ON করুন (admin panel Supabase real-time-এর জন্য)
+
+### 💡 সবচেয়ে দ্রুত Test
+
+সব DNS setup করার পর, browser-এ এই URL-গুলো try করুন:
+
+```
+https://mukisoft.tech/
+https://mukisoft.tech/en
+https://mukisoft.tech/en/team
+https://www.mukisoft.tech/en/team
+https://mukisoft.tech/bn
+https://mukisoft.tech/bn/about
+```
+
+সবগুলোই কাজ করা উচিত — কোনো page-এ reload দিলেও 404 বা tunnel error আসবে না।
+
+---
+
 ## 📞 Need Help?
 
 - Vercel docs: https://vercel.com/docs
