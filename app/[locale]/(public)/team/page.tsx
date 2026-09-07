@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { company } from '@/lib/config/company';
 import { ensureCompanySettings } from '@/lib/config/company.server';
 import { fetchPublishedTeam, fetchPublishedLeadership } from '@/lib/supabase/public';
-import { TeamAvatar } from '@/components/ui/brand-image';
+import { TeamAvatar, FounderImage } from '@/components/ui/brand-image';
 import { ContactChip } from '@/components/ui/contact-chip';
 
 export const dynamic = 'force-dynamic';
@@ -199,6 +199,64 @@ export default async function TeamPage({
                 <p className="mt-2 text-sm leading-relaxed text-ink-600">{t(c.descKey)}</p>
               </Reveal>
             ))}
+          </div>
+        </Container>
+      </Section>
+
+      <Section tone="default">
+        <Container size="xl">
+          <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+            <Reveal className="lg:col-span-7">
+              <SectionEyebrow>{t('founderPhotoEyebrow')}</SectionEyebrow>
+              <SectionTitle className="mt-4">{t('founderPhotoTitle')}</SectionTitle>
+              <SectionLead className="mt-5">
+                {t('founderPhotoLead', { company: company.name })}
+              </SectionLead>
+              {founder ? (
+                <p className="mt-6 font-display text-xl tracking-tight text-ink-900">
+                  {founder.name}
+                  <span className="ml-3 text-base font-normal text-ink-500">
+                    — {t('founderPhotoAlt', { name: founder.name })}
+                  </span>
+                </p>
+              ) : null}
+            </Reveal>
+
+            <Reveal delay={120} className="lg:col-span-5">
+              <figure className="relative overflow-hidden rounded-3xl border border-ink-200/70 bg-white shadow-sm">
+                <div className="flex items-center justify-center bg-gradient-to-br from-accent-50 via-white to-ink-50 p-8">
+                  {founder ? (
+                    <FounderImage
+                      src={founder.image_url ?? null}
+                      companyName={founder.name}
+                      alt={t('founderPhotoAlt', { name: founder.name })}
+                      size="xl"
+                      rounded="2xl"
+                      objectPosition={founder.image_focus ?? 'center top'}
+                    />
+                  ) : (
+                    <FounderImage
+                      companyName={company.name}
+                      alt={company.name}
+                      size="xl"
+                      rounded="2xl"
+                    />
+                  )}
+                </div>
+                {founder ? (
+                  <figcaption className="flex items-center justify-between gap-4 border-t border-ink-200/70 bg-white px-6 py-4">
+                    <div>
+                      <p className="font-display text-base tracking-tight text-ink-900">
+                        {founder.name}
+                      </p>
+                      <p className="mt-0.5 text-xs uppercase tracking-[0.14em] text-ink-500">
+                        {founder.position}
+                      </p>
+                    </div>
+                  </figcaption>
+                ) : null}
+              </figure>
+            </Reveal>
           </div>
         </Container>
       </Section>
