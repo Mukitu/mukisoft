@@ -282,67 +282,107 @@ function MobileMenu({
 }) {
   const [expanded, setExpanded] = React.useState<string | null>(null);
 
+  // Reset expanded state whenever the menu closes so reopening it
+  // shows a clean collapsed state.
+  React.useEffect(() => {
+    if (!open) setExpanded(null);
+  }, [open]);
+
   return (
     <div
       id="mobile-menu"
       className={cn(
-        // z-50 (NOT z-30) so the menu sits above the sticky header,
-        // even when the header has backdrop-filter active. The header
-        // has z-40; the menu needs to be higher.
-        'lg:hidden fixed inset-x-0 top-16 z-50 max-h-[calc(100vh-4rem)] origin-top overflow-y-auto bg-white shadow-2xl transition-all duration-300',
+        // Render as a fixed overlay BELOW the header (top-16 = 64px)
+        // but ABOVE everything else (z-50). Use a viewport-relative
+        // height with overflow-y-auto so long menus scroll instead of
+        // getting clipped. The previous grid-rows transition trick
+        // caused some mobile browsers (iOS Safari, Android Chrome) to
+        // hide children — switching to a simple conditional render
+        // is reliable on every device.
+        'lg:hidden fixed inset-x-0 top-16 bottom-0 z-50 flex flex-col bg-white shadow-2xl transition-opacity duration-200',
         open
-          ? 'pointer-events-auto translate-y-0 opacity-100'
-          : 'pointer-events-none -translate-y-2 opacity-0',
+          ? 'pointer-events-auto overflow-y-auto opacity-100'
+          : 'pointer-events-none overflow-hidden opacity-0',
       )}
       aria-hidden={!open}
+      // Allow scroll on the menu container itself
+      style={{ WebkitOverflowScrolling: 'touch' }}
     >
-      <div className="container-x py-6">
-        <nav aria-label={tNav('mobilePrimary')} className="flex flex-col divide-y divide-ink-200/70">
+      <div className="container-x flex flex-col gap-1 py-6">
+        <nav aria-label={tNav('mobilePrimary')} className="flex flex-col">
           {items.map((item) => {
             const hasChildren = !!item.children && item.children.length > 0;
             const isExpanded = expanded === item.label;
             const label = translateLabel(item.label, tNav);
+
+            // Active-state helper for items and their children.
+            const isActive =
+              item.href === pathname ||
+              (item.href && item.href !== '/' && pathname.startsWith(item.href));
+
             return (
-              <div key={item.label} className="py-2">
+              <div
+                key={item.label}
+                className="border-b border-ink-200/70 last:border-b-0"
+              >
                 {hasChildren ? (
                   <>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between py-3 text-left text-base font-medium text-ink-900"
+                      className="flex w-full min-h-[48px] items-center justify-between py-3 text-left text-base font-medium text-ink-900 active:bg-ink-50"
                       onClick={() => setExpanded(isExpanded ? null : item.label)}
                       aria-expanded={isExpanded}
+                      aria-controls={`mobile-section-${item.label}`}
                     >
-                      {label}
+                      <span>{label}</span>
                       <Icon
                         name="chevron-down"
-                        className={cn('h-4 w-4 transition-transform', isExpanded && 'rotate-180')}
+                        className={cn(
+                          'h-4 w-4 transition-transform duration-200',
+                          isExpanded && 'rotate-180',
+                        )}
                       />
                     </button>
-                    <div
-                      className={cn(
-                        'grid transition-all duration-300',
-                        isExpanded ? 'grid-rows-[1fr] opacity-100 pb-3' : 'grid-rows-[0fr] opacity-0',
-                      )}
-                    >
-                      <div className="overflow-hidden">
-                        <div className="flex flex-col gap-1 pl-2">
-                          {item.children!.map((child) => (
-                            <Link
-                              key={child.label}
-                              href={child.href!}
-                              className="rounded-lg px-3 py-2 text-sm text-ink-700 hover:bg-ink-50"
-                            >
-                              {translateLabel(child.label, tNav)}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    {/* Plain conditional render (no grid-rows trick).
+                        The parent already has overflow-y-auto so a tall
+                        expanded list scrolls naturally. */}
+                    {isExpanded ? (
+                      <ul
+                        id={`mobile-section-${item.label}`}
+                        className="flex flex-col gap-0.5 pb-3 pl-2"
+                      >
+                        {item.children!.map((child) => {
+                          const childActive =
+                            child.href === pathname ||
+                            (child.href &&
+                              child.href !== '/' &&
+                              pathname.startsWith(child.href));
+                          return (
+                            <li key={child.label}>
+                              <Link
+                                href={child.href!}
+                                className={cn(
+                                  'block min-h-[40px] rounded-lg px-3 py-2 text-sm transition-colors',
+                                  childActive
+                                    ? 'bg-accent-50 font-medium text-accent-700'
+                                    : 'text-ink-700 active:bg-ink-50',
+                                )}
+                              >
+                                {translateLabel(child.label, tNav)}
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
                   </>
                 ) : (
                   <Link
                     href={item.href!}
-                    className="block py-3 text-base font-medium text-ink-900"
+                    className={cn(
+                      'flex min-h-[48px] items-center py-3 text-base font-medium transition-colors active:bg-ink-50',
+                      isActive ? 'text-accent-700' : 'text-ink-900',
+                    )}
                   >
                     {label}
                   </Link>
@@ -352,8 +392,8 @@ function MobileMenu({
           })}
         </nav>
 
-        <div className="mt-8 flex flex-col gap-3">
-          <Button size="lg" href="/contact" variant="primary">
+        <div className="mt-6 flex flex-col gap-3">
+          <Button size="lg" href="/contact" variant="primary" className="w-full">
             {tCommon('startProject')}
             <Icon name="arrow-right" className="h-4 w-4" />
           </Button>
