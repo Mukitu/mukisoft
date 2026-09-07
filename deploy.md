@@ -487,6 +487,161 @@ https://mukisoft.tech/bn/about
 
 ---
 
+## 🚨 Part 9 — Domain Forwarding vs DNS Records (Critical!)
+
+### আপনার সমস্যাটা হলো URL Forwarding!
+
+আপনি domain কিনেছেন **name.store** থেকে (Namify Domains Inc)। তাদের অনেক user ভুল করে domain **"URL Forwarding"** setup করে দেন — কিন্তু সেটা কাজ করে না Vercel-এর সাথে। এটা diagnose করা যায় এভাবে:
+
+```bash
+dig www.mukisoft.tech +short @8.8.8.8
+# আউটপুট: 216.198.79.1, 64.29.17.65   ← এই IP গুলো name.store এর parking/forwarding service এর
+# সঠিক হওয়া উচিত: 76.76.21.21         ← Vercel এর IP
+```
+
+**216.198.79.1** IP টা name.store এর parking page — এটা HTTPS accept করে না তাই ERR_TUNNEL_CONNECTION_FAILED আসে।
+
+### ✅ সঠিক সমাধান — name.store / Namify তে DNS Records সেট করুন
+
+#### Step 1: name.store এ Login
+
+1. https://name.store এ যান
+2. আপনার account এ login করুন
+3. **My Domains** → `mukisoft.tech` এ click করুন
+
+#### Step 2: "URL Forwarding" বন্ধ করুন (যদি চালু থাকে)
+
+**Settings** বা **Manage Domain** section এ খুঁজুন:
+- **"URL Forwarding" / "Domain Forwarding" / "Web Forwarding"** — যদি enable থাকে তাহলে **DISABLE** করুন
+- **"Email Forwarding"** — এটা চালু থাকলে DNS records interfere করতে পারে, সাময়িকভাবে বন্ধ রাখুন
+
+URL Forwarding চালু থাকলে সেটাই আপনার সব traffic পার্কিং পেজে redirect করে দিচ্ছে।
+
+#### Step 3: Nameservers চেক করুন
+
+**Nameservers** section এ দেখুন — দুটো অবস্থা হতে পারে:
+
+**Option A: Custom nameservers (Vercel DNS) — আপনার case:**
+```
+ns1.vercel-dns.com
+ns2.vercel-dns.com
+```
+যদি এটা সেট করা থাকে, তাহলে আপনাকে **Vercel Dashboard এ** DNS records edit করতে হবে (Step 4B দেখুন)।
+
+**Option B: Default name.store nameservers:**
+```
+ns1.name.store
+ns2.name.store (বা similar)
+```
+যদি এটা থাকে, তাহলে আপনাকে **name.store এ** DNS records edit করতে হবে (Step 4A)।
+
+**Recommendation:** Vercel DNS ব্যবহার করুন (Option A) — কারণ Vercel automatic SSL manage করে এবং CDN settings better।
+
+#### Step 4A: name.store এ DNS Records সেট (যদি name.store NS ব্যবহার করেন)
+
+**DNS Management** বা **Manage DNS** section এ যান। পুরানো records delete করে এই দুটো যোগ করুন:
+
+| Type | Name | Value / Target | TTL |
+|---|---|---|---|
+| `A` | `@` (বা leave blank) | `76.76.21.21` | `3600` বা `Auto` |
+| `CNAME` | `www` | `cname.vercel-dns.com` | `3600` বা `Auto` |
+
+> 💡 **Important:** name.store interface এ `Name` বা `Host` field `@` হলে root domain (`mukisoft.tech`)। `www` হলে subdomain। কিছু registrar `Host` field এ root domain এর জন্য `@`, subdomain এর জন্য শুধু subdomain name চায়।
+
+#### Step 4B: Vercel Dashboard এ DNS Records সেট (যদি Vercel NS ব্যবহার করেন — আপনার current setup)
+
+1. https://vercel.com/dashboard → আপনার MukiSoft project
+2. **Settings** → **Domains**
+3. `mukisoft.tech` এর পাশে click করুন
+4. **"DNS Records"** বা **"Edit"** section এ নিচের records verify/edit করুন:
+
+| Type | Name | Value |
+|---|---|---|
+| `A` | `@` | `76.76.21.21` |
+| `CNAME` | `www` | `cname.vercel-dns.com` |
+
+5. যদি `216.198.79.1` বা অন্য কোনো ভুল IP থাকে, সেটা **delete** করুন
+6. সঠিক values দিয়ে save করুন
+
+#### Step 5: Wait for DNS Propagation
+
+DNS records update হতে **৫ মিনিট থেকে ৪৮ ঘণ্টা** লাগতে পারে। সাধারণত ১৫-৩০ মিনিট।
+
+**Verify:**
+
+```bash
+# macOS/Linux terminal:
+dig mukisoft.tech +short @8.8.8.8
+# সঠিক আউটপুট: 76.76.21.21
+
+dig www.mukisoft.tech +short @8.8.8.8
+# সঠিক আউটপুট: 76.76.21.21 (CNAME flatten হয়ে A record হয়ে যায়)
+
+# অথবা browser: https://dnschecker.org/#A/mukisoft.tech
+```
+
+#### Step 6: Vercel-এ Domain Configuration Verify
+
+Vercel dashboard → Settings → Domains এ:
+
+- `mukisoft.tech` এর পাশে **"Valid Configuration"** দেখাবে ✅
+- SSL certificate automatically issue হবে (~১ মিনিট)
+- সব ঠিক থাকলে `https://mukisoft.tech/en` browser-এ কাজ করবে
+
+#### Step 7: Test
+
+Browser-এ:
+- `https://mukisoft.tech/` → should redirect to `/en` ✅
+- `https://www.mukisoft.tech/about` → should redirect to `/en/about` ✅
+- `https://mukisoft.tech/en/team` → should work directly ✅
+
+### 🆘 সমস্যা থাকলে Quick Checks
+
+**Check 1: আসলেই Vercel DNS ব্যবহার হচ্ছে?**
+```bash
+dig mukisoft.tech NS +short
+# ns1.vercel-dns.com, ns2.vercel-dns.com দেখালে সঠিক
+```
+
+**Check 2: A record সঠিক আছে?**
+```bash
+dig mukisoft.tech A +short
+# 76.76.21.21 দেখালে সঠিক
+# 216.198.79.1 বা অন্য IP দেখালে ভুল
+```
+
+**Check 3: URL Forwarding বন্ধ আছে?**
+- name.store → My Domains → mukisoft.tech → URL Forwarding: OFF
+
+**Check 4: পুরানো cache clear**
+```bash
+# macOS:
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+# বা browser এ:
+# Chrome: Cmd+Shift+Delete → Cached files clear
+# তারপর hard reload: Cmd+Shift+R
+```
+
+**Check 5: Cloudflare চালু আছে কিনা (যদি না জানেন)**
+```bash
+dig mukisoft.tech NS +short
+# যদি ada.ns.cloudflare.com বা similar দেখায়, তাহলে Cloudflare ব্যবহার হচ্ছে
+# Cloudflare এ: DNS → Records → Proxy status OFF (grey cloud) করুন
+```
+
+### 🎯 Summary — আপনাকে ঠিক এই ৩টা কাজ করতে হবে
+
+1. **name.store এ URL Forwarding disable করুন**
+2. **Vercel Dashboard → Domains → DNS Records:**
+   - `A` `@` → `76.76.21.21` (ভুল IP থাকলে delete করে নতুন add)
+   - `CNAME` `www` → `cname.vercel-dns.com`
+3. **১০-৩০ মিনিট wait** করুন DNS propagation এর জন্য
+
+তারপর `https://mukisoft.tech/about` সহ সব URL কাজ করবে — middleware automatically `/en/about` এ redirect করবে এবং সব page reload (F5) ও 404 ছাড়াই কাজ করবে।
+
+---
+
 ## 📞 Need Help?
 
 - Vercel docs: https://vercel.com/docs
