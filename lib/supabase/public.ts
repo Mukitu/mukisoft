@@ -171,6 +171,32 @@ export async function fetchPublishedTeam(locale: Locale = 'en'): Promise<TeamMem
   )();
 }
 
+/**
+ * Fetch a single published team member by id. The `team_members` table
+ * has no slug column, so we use the UUID directly. This is called from
+ * the dynamic `/[locale]/team/[id]` route — it doesn't go through
+ * `unstable_cache` because the route-level `revalidate = 60` already
+ * gives us ISR caching at the page level, and per-row caching here
+ * would consume memory for rows that almost never get re-viewed.
+ */
+export async function fetchPublishedTeamMember(
+  id: string,
+  locale: Locale = 'en',
+): Promise<TeamMember | null> {
+  const supabase = getPublicClient();
+  if (!supabase) return null;
+  const { data, error } = await safeQuery<TeamMember | null>(() =>
+    (supabase.from('team_members') as any)
+      .select('*')
+      .eq('id', id)
+      .eq('is_published', true)
+      .maybeSingle(),
+  );
+  if (error || !data) return null;
+  const [translated] = await applyTranslations([data], 'team_member', locale);
+  return translated ?? data;
+}
+
 export async function fetchPublishedProcess(locale: Locale = 'en'): Promise<ProcessStep[]> {
   return unstable_cache(
     async () => {

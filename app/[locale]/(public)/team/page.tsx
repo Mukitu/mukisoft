@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { isLocale, type Locale } from '@/lib/i18n/config';
 import { getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { Container } from '@/components/ui/container';
@@ -79,23 +80,29 @@ export default async function TeamPage({
                 <Reveal
                   key={m.id}
                   delay={(i % 4) * 40}
-                  className="flex flex-col rounded-2xl border border-ink-200/70 bg-white p-6"
+                  className="group flex flex-col rounded-2xl border border-ink-200/70 bg-white p-6 transition-colors hover:border-accent-300"
                 >
-                  <TeamAvatar
-                    name={m.name}
-                    image={m.image_url ?? undefined}
-                    size="md"
-                    objectPosition={m.image_focus ?? 'center top'}
-                  />
-                  <h3 className="mt-4 truncate font-display text-base tracking-tight">
-                    {m.name}
-                  </h3>
-                  <p className="truncate text-xs text-ink-600">{m.role}</p>
-                  {m.bio ? (
-                    <p className="mt-3 text-sm leading-relaxed text-ink-600 line-clamp-2">
-                      {m.bio}
-                    </p>
-                  ) : null}
+                  <Link href={`/team/${m.id}`} className="flex flex-col">
+                    <TeamAvatar
+                      name={m.name}
+                      image={m.image_url ?? undefined}
+                      size="md"
+                      objectPosition={m.image_focus ?? 'center top'}
+                    />
+                    <h3 className="mt-4 truncate font-display text-base tracking-tight group-hover:text-accent-700">
+                      {m.name}
+                    </h3>
+                    <p className="truncate text-xs text-ink-600">{m.role}</p>
+                    {m.bio ? (
+                      <p className="mt-3 text-sm leading-relaxed text-ink-600 line-clamp-2">
+                        {m.bio}
+                      </p>
+                    ) : null}
+                    <span className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-accent-700">
+                      {t('viewProfile')}
+                      <Icon name="arrow-up-right" className="h-3 w-3" />
+                    </span>
+                  </Link>
                 </Reveal>
               ))}
             </div>

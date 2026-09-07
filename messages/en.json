@@ -805,5 +805,15 @@
     "current": "Current language: {lang}",
     "english": "English",
     "bangla": "বাংলা"
+  },
+  "teamDetail": {
+    "notFoundTitle": "Team member",
+    "crumbTeam": "Team",
+    "contactEyebrow": "Get in touch",
+    "connectHeading": "Connect with {name}",
+    "emailButton": "Email {name}",
+    "backToTeam": "← Back to team",
+    "departmentLabel": "Department",
+    "notFoundBody": "This team member profile could not be found or is no longer published."
   }
 }

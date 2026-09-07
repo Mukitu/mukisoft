@@ -805,5 +805,15 @@
     "current": "বর্তমান ভাষা: {lang}",
     "english": "English",
     "bangla": "বাংলা"
+  },
+  "teamDetail": {
+    "notFoundTitle": "টিম সদস্য",
+    "crumbTeam": "টিম",
+    "contactEyebrow": "যোগাযোগ",
+    "connectHeading": "{name} এর সাথে যুক্ত হোন",
+    "emailButton": "{name} কে ইমেইল করুন",
+    "backToTeam": "← টিমে ফিরে যান",
+    "departmentLabel": "বিভাগ",
+    "notFoundBody": "এই টিম সদস্যের প্রোফাইল পাওয়া যায়নি অথবা আর প্রকাশিত নেই।"
   }
 }
