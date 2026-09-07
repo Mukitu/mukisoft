@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, unstable_setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { company, setCompanySettings } from '@/lib/config/company';
+import { company, setCompanySettings, DOMAIN } from '@/lib/config/company';
 import { getSiteConfig } from '@/lib/config/site';
 import { assetPaths } from '@/lib/config/assets';
 import { fetchSiteSettings } from '@/lib/supabase/public';
@@ -33,7 +33,13 @@ export async function generateMetadata({
   const logoUrl = settings?.navbar_logo_url;
   const cfg = getSiteConfig();
   const ogLocale = localeToBcp47[locale];
-  const baseUrl = cfg.url.replace(/\/$/, '');
+  // CRITICAL: Build the absolute URL from the STATIC `DOMAIN` constant
+  // (not `cfg.url` which depends on an async DB fetch that may fail
+  // during Vercel's static prerender phase). Social crawlers need a
+  // hard, full `https://…` URL in the HTML — if the resolved URL is
+  // empty or relative because of a fetch race, the entire thumbnail
+  // vanishes on every platform.
+  const baseUrl = `https://${DOMAIN}`;
 
   const icons: Metadata['icons'] = faviconUrl
     ? {
@@ -84,19 +90,21 @@ export async function generateMetadata({
       title: cfg.title,
       description: cfg.description,
       siteName: company.displayName,
-      // Facebook, WhatsApp, LinkedIn, Slack, Discord all read `og:image`
-      // first. We supply BOTH the PNG and a JPG fallback so the crawler
-      // picks whichever it supports. Dimensions and alt text are required
-      // by Facebook's crawler for a large preview card — without them
-      // it serves a tiny thumbnail (or none at all).
+      // Facebook, WhatsApp, LinkedIn, Slack, Discord, Telegram all read
+      // `og:image` first. We supply BOTH PNG and JPG so the crawler
+      // always has a working raster to pick. Dimensions and alt text
+      // are required by Facebook's crawler for a large preview card —
+      // without them it serves a tiny thumbnail (or none at all).
       //
-      // We use the FULL absolute URL here (not just `/og.png`). Some
-      // crawlers (notably WhatsApp) refuse to resolve relative URLs
-      // against `metadataBase` and silently drop the image. Belt and braces.
+      // We use absolute URLs built from a STATIC DOMAIN constant as the
+      // ultimate fallback so the og:image is never a relative path.
+      // Social crawlers (notably WhatsApp and Telegram) do NOT resolve
+      // relative URLs against `metadataBase` — they want a full
+      // `https://…` URL in the raw HTML.
       images: [
         {
-          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
-          secureUrl: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          url: `${baseUrl}/og.png`,
+          secureUrl: `${baseUrl}/og.png`,
           type: 'image/png',
           width: 1200,
           height: 630,
@@ -106,6 +114,18 @@ export async function generateMetadata({
           url: `${baseUrl}/og.jpg`,
           secureUrl: `${baseUrl}/og.jpg`,
           type: 'image/jpeg',
+          width: 1200,
+          height: 630,
+          alt: `${company.displayName} — ${company.tagline}`,
+        },
+        {
+          // Third fallback: admin-uploaded custom image from Supabase
+          // (if the DB has one, this entry appears first to scrapers
+          // that honour array ordering — Facebook picks the last entry
+          // for og:image, so we list the static asset last).
+          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          secureUrl: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          type: 'image/png',
           width: 1200,
           height: 630,
           alt: `${company.displayName} — ${company.tagline}`,
@@ -121,7 +141,7 @@ export async function generateMetadata({
       // applies — a large card needs >= 300x157, we ship 1200x630.
       images: [
         {
-          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
+          url: `${baseUrl}/og.png`,
           alt: `${company.displayName} — ${company.tagline}`,
         },
       ],

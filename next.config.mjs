@@ -31,6 +31,26 @@ const nextConfig = {
           },
         ],
       },
+      // Social crawlers (Facebook, WhatsApp, LinkedIn, Slack, Telegram)
+      // re-scrape OG images on a long TTL. Make sure the response is
+      // explicitly marked `public, max-age=86400` so the CDN at the
+      // edge caches it correctly and the Content-Type header is
+      // pinned (some scrapers reject images served with the wrong
+      // mime type).
+      {
+        source: '/og.png',
+        headers: [
+          { key: 'Content-Type', value: 'image/png' },
+          { key: 'Cache-Control', value: 'public, max-age=86400, immutable' },
+        ],
+      },
+      {
+        source: '/og.jpg',
+        headers: [
+          { key: 'Content-Type', value: 'image/jpeg' },
+          { key: 'Cache-Control', value: 'public, max-age=86400, immutable' },
+        ],
+      },
     ];
   },
 };
