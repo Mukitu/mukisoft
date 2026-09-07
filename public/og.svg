@@ -1,36 +1,108 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
   <defs>
+    <!-- Background: deep navy with a violet accent glow -->
     <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#0b0d10"/>
-      <stop offset="100%" stop-color="#16191e"/>
+      <stop offset="0%" stop-color="#0a0d14"/>
+      <stop offset="100%" stop-color="#161a2e"/>
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="0%" r="60%">
-      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.4"/>
+
+    <!-- Glow halo behind the logo -->
+    <radialGradient id="halo" cx="22%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#7c5cff" stop-opacity="0.55"/>
+      <stop offset="60%" stop-color="#7c5cff" stop-opacity="0.15"/>
       <stop offset="100%" stop-color="#7c5cff" stop-opacity="0"/>
     </radialGradient>
-    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
-      <path d="M 56 0 L 0 0 0 56" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+
+    <!-- Subtle dot grid -->
+    <pattern id="dots" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="rgba(255,255,255,0.05)"/>
     </pattern>
+
+    <!-- Logo gradient -->
+    <linearGradient id="logoGrad" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c5cff"/>
+    </linearGradient>
   </defs>
+
+  <!-- Background layers -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#grid)"/>
-  <rect width="1200" height="630" fill="url(#glow)"/>
-  <g transform="translate(80, 90)">
-    <rect width="60" height="60" rx="14" fill="#7c5cff"/>
-    <text x="30" y="42" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="700" fill="#ffffff">M</text>
-    <circle cx="56" cy="6" r="6" fill="#7c5cff" stroke="#0b0d10" stroke-width="3"/>
-    <text x="84" y="30" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="700" fill="#ffffff">MukiSoft</text>
-    <text x="84" y="54" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" letter-spacing="2">TECHNOLOGY</text>
+  <rect width="1200" height="630" fill="url(#dots)"/>
+  <rect width="1200" height="630" fill="url(#halo)"/>
+
+  <!-- Decorative diagonal accent lines (top-right corner) -->
+  <g opacity="0.18" stroke="#7c5cff" stroke-width="1.2" fill="none">
+    <path d="M 1080 0 L 1200 120"/>
+    <path d="M 1100 0 L 1200 100"/>
+    <path d="M 1120 0 L 1200 80"/>
   </g>
-  <g transform="translate(80, 220)">
-    <text font-family="Inter, system-ui, sans-serif" font-size="56" font-weight="700" fill="#ffffff">
-      <tspan x="0" y="60">Technology that turns ideas</tspan>
-      <tspan x="0" y="130">into digital products.</tspan>
+
+  <!-- Brand mark (M monogram) -->
+  <g transform="translate(80, 80)">
+    <rect width="72" height="72" rx="18" fill="url(#logoGrad)"/>
+    <rect x="3" y="3" width="66" height="66" rx="15" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+    <text x="36" y="50" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="38" font-weight="800" fill="#ffffff" letter-spacing="-1">M</text>
+    <circle cx="68" cy="6" r="6" fill="#22d3ee" stroke="#0a0d14" stroke-width="3"/>
+    <text x="92" y="36" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="#ffffff" letter-spacing="-0.5">MukiSoft</text>
+    <text x="92" y="62" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.6)" letter-spacing="3">TECHNOLOGY</text>
+  </g>
+
+  <!-- Eyebrow tag -->
+  <g transform="translate(80, 200)">
+    <rect width="240" height="36" rx="18" fill="rgba(124,92,255,0.15)" stroke="rgba(124,92,255,0.45)" stroke-width="1"/>
+    <circle cx="20" cy="18" r="4" fill="#22d3ee"/>
+    <text x="34" y="24" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" fill="#a78bfa" letter-spacing="1.5">SOFTWARE · AI · SAAS</text>
+  </g>
+
+  <!-- Headline (split across two lines for impact) -->
+  <g transform="translate(80, 270)" font-family="Inter, system-ui, sans-serif" fill="#ffffff">
+    <text font-size="64" font-weight="800" letter-spacing="-2">
+      <tspan x="0" y="50">Engineering that</tspan>
+      <tspan x="0" y="125">turns into products.</tspan>
     </text>
-    <text x="0" y="190" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="400" fill="rgba(255,255,255,0.7)">Software · AI · Web · Mobile · SaaS · Design</text>
   </g>
-  <g transform="translate(80, 520)">
+
+  <!-- Subheadline / description -->
+  <g transform="translate(80, 460)" font-family="Inter, system-ui, sans-serif" fill="rgba(255,255,255,0.72)">
+    <text font-size="22" font-weight="400">
+      <tspan x="0" y="0">Web · Mobile · SaaS · AI · Cloud</tspan>
+    </text>
+  </g>
+
+  <!-- CTA pill (right side of description) -->
+  <g transform="translate(80, 510)">
     <rect width="220" height="56" rx="28" fill="#ffffff"/>
-    <text x="110" y="36" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#0b0d10">Start a Project →</text>
+    <text x="110" y="36" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="600" fill="#0a0d14">mukisoft.tech</text>
   </g>
+
+  <!-- Floating geometric shapes (right side decorative) -->
+  <g opacity="0.85">
+    <!-- Big rounded rect with subtle gradient -->
+    <rect x="780" y="180" width="340" height="340" rx="36" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" stroke-width="1"/>
+    <rect x="800" y="200" width="300" height="300" rx="28" fill="rgba(124,92,255,0.08)" stroke="rgba(124,92,255,0.20)" stroke-width="1"/>
+
+    <!-- Code-style blocks inside the frame -->
+    <g transform="translate(820, 240)">
+      <rect width="260" height="40" rx="8" fill="rgba(34,211,238,0.15)"/>
+      <text x="16" y="26" font-family="JetBrains Mono, monospace" font-size="14" fill="#22d3ee">&lt;Component /&gt;</text>
+    </g>
+    <g transform="translate(820, 296)">
+      <rect width="260" height="40" rx="8" fill="rgba(167,139,250,0.15)"/>
+      <text x="16" y="26" font-family="JetBrains Mono, monospace" font-size="14" fill="#a78bfa">const app = new SaaS();</text>
+    </g>
+    <g transform="translate(820, 352)">
+      <rect width="260" height="40" rx="8" fill="rgba(255,255,255,0.08)"/>
+      <text x="16" y="26" font-family="JetBrains Mono, monospace" font-size="14" fill="rgba(255,255,255,0.85)">deploy(production);</text>
+    </g>
+    <g transform="translate(820, 408)">
+      <rect width="260" height="40" rx="8" fill="rgba(34,197,94,0.15)"/>
+      <circle cx="22" cy="20" r="4" fill="#22c55e"/>
+      <text x="38" y="26" font-family="JetBrains Mono, monospace" font-size="14" fill="#22c55e">● shipped · v1.0</text>
+    </g>
+  </g>
+
+  <!-- Footer hairline -->
+  <line x1="80" y1="600" x2="1120" y2="600" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="80" y="618" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.45)" letter-spacing="2">BANGLADESH · ENGINEERING FOR BUSINESSES WORLDWIDE</text>
+  <text x="1120" y="618" text-anchor="end" font-family="Inter, system-ui, sans-serif" font-size="12" fill="rgba(255,255,255,0.45)" letter-spacing="2">EST. 2021</text>
 </svg>

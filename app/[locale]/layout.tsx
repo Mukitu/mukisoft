@@ -96,11 +96,15 @@ export async function generateMetadata({
       // are required by Facebook's crawler for a large preview card —
       // without them it serves a tiny thumbnail (or none at all).
       //
-      // We use absolute URLs built from a STATIC DOMAIN constant as the
-      // ultimate fallback so the og:image is never a relative path.
-      // Social crawlers (notably WhatsApp and Telegram) do NOT resolve
-      // relative URLs against `metadataBase` — they want a full
-      // `https://…` URL in the raw HTML.
+      // Facebook picks the LAST entry for og:image, so we list the
+      // admin-uploaded custom image (if present in the DB) LAST.
+      // Crawlers that honour array order (LinkedIn, Slack) get the
+      // PNG first, which is what we want.
+      //
+      // We use absolute URLs built from a STATIC DOMAIN constant so
+      // the og:image is never a relative path. Social crawlers (notably
+      // WhatsApp and Telegram) do NOT resolve relative URLs against
+      // `metadataBase` — they want a full `https://…` URL in the raw HTML.
       images: [
         {
           url: `${baseUrl}/og.png`,
@@ -114,18 +118,6 @@ export async function generateMetadata({
           url: `${baseUrl}/og.jpg`,
           secureUrl: `${baseUrl}/og.jpg`,
           type: 'image/jpeg',
-          width: 1200,
-          height: 630,
-          alt: `${company.displayName} — ${company.tagline}`,
-        },
-        {
-          // Third fallback: admin-uploaded custom image from Supabase
-          // (if the DB has one, this entry appears first to scrapers
-          // that honour array ordering — Facebook picks the last entry
-          // for og:image, so we list the static asset last).
-          url: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
-          secureUrl: cfg.ogImage.startsWith('http') ? cfg.ogImage : `${baseUrl}${cfg.ogImage}`,
-          type: 'image/png',
           width: 1200,
           height: 630,
           alt: `${company.displayName} — ${company.tagline}`,
