@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { company } from '@/lib/config/company';
 import { assetPaths } from '@/lib/config/assets';
 import { cn } from '@/lib/utils/cn';
+import { LogoImage } from '@/components/ui/brand-image';
 
 type LogoProps = {
   variant?: 'light' | 'dark';
@@ -30,19 +31,23 @@ type LogoProps = {
 /**
  * Server-renderable brand logo. The navbar passes an admin-uploaded URL
  * via `src`; the footer always falls back to the bundled asset.
+ *
+ * Uses the shared `LogoImage` component so:
+ * - next/image optimizes the raster (AVIF/WebP, lazy/eager, blur placeholder)
+ * - A fallback chain kicks in if the configured file is missing on disk
+ * - One component, one behavior, no duplication across navbar/footer
  */
 export function Logo({
   variant = 'dark',
   className,
   size = 'md',
-  src,
   heightPx,
   showText = false,
 }: LogoProps) {
   const sizeMap = {
-    sm: { h: 28, w: 28, text: 'text-sm' },
-    md: { h: 36, w: 36, text: 'text-base' },
-    lg: { h: 44, w: 44, text: 'text-lg' },
+    sm: { h: 28, w: 96, text: 'text-sm' },
+    md: { h: 36, w: 144, text: 'text-base' },
+    lg: { h: 44, w: 176, text: 'text-lg' },
   } as const;
   const preset = sizeMap[size];
 
@@ -55,8 +60,6 @@ export function Logo({
   })();
   const textCls = preset.text;
 
-  const resolvedSrc = src ?? assetPaths.logo.primary;
-
   return (
     <Link
       href="/"
@@ -67,17 +70,17 @@ export function Logo({
       )}
       aria-label={`${company.displayName} home`}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={resolvedSrc}
-        alt=""
-        aria-hidden="true"
-        width={safeHeight * 4}
-        height={safeHeight * 4}
-        loading="eager"
-        decoding="async"
-        style={{ height: safeHeight, width: 'auto' }}
-        className={cn('h-auto', className)}
+      <LogoImage
+        // LogoImage reads the bundled asset from assetPaths.logo.primary
+        // and falls back to the SVG wordmark on error. We pass width/
+        // height for the raster, priority so it loads eagerly in the
+        // navbar (above the fold).
+        companyName={company.displayName}
+        width={Math.round(safeHeight * 4)}
+        height={safeHeight}
+        priority
+        className="h-auto"
+        fallbackClassName={cn('h-auto', className)}
       />
       {showText && company.name ? (
         <span className="flex flex-col leading-none">

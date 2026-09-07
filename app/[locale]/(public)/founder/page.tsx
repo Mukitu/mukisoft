@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { isLocale, type Locale } from '@/lib/i18n/config';
 import { getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { Container } from '@/components/ui/container';
 import { Section, SectionEyebrow, SectionTitle, SectionLead } from '@/components/ui/section';
 import { PageHeader } from '@/components/sections/page-header';
@@ -51,13 +50,31 @@ export default async function FounderPage({
   await ensureCompanySettings();
   const leaders = await fetchPublishedLeadership(locale);
 
-  // No published leadership rows → 404 the page so unpublishing hides it
-  // completely from search engines and direct visitors.
-  if (leaders.length === 0) {
-    notFound();
-  }
+  // Fall back to the static founder from company config when no
+  // leadership rows are published in the DB. We deliberately do NOT
+  // call notFound() here anymore: doing so during the ISR build
+  // (when Supabase env vars aren't yet set in Vercel) produces a
+  // hard 404 page that gets cached for the full revalidate window.
+  // Showing the founder fallback from `defaults` keeps the page
+  // visible at every URL, even when the DB is unreachable.
+  const primary = leaders[0] ?? {
+    name: company.founder.name,
+    position: company.founder.role,
+    image_url: null,
+    email: company.founder.email,
+    phone: company.founder.phone,
+    location: company.contact.location,
+    education: company.founder.education?.degree,
+    university: company.founder.education?.university,
+    linkedin_url: null,
+    github_url: null,
+    short_bio: company.founder.shortBio,
+    full_bio: company.founder.bio,
+    professional_focus: company.founder.focus,
+    image_focus: 'center top',
+    image_alt: `${company.founder.name} — ${company.founder.role}`,
+  };
 
-  const primary = leaders[0];
   const focus = primary.professional_focus ?? [];
   const photo = primary.image_url ?? null;
   const email = primary.email ?? company.contact.email;

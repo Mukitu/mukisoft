@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { invalidatePublicCache } from '@/lib/supabase/admin-cache';
 import { useToast } from '@/components/admin/toast-provider';
 import { ConfirmDialog } from '@/components/admin/confirm-dialog';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
@@ -198,6 +199,7 @@ export function BlogManager({ initialPosts, initialCategories, initialTags }: Pr
         .select('*')
         .single();
       if (error) throw error;
+      await invalidatePublicCache({ tables: ['blog_categories'] });
       push(`Category "${name}" added.`, 'success');
       await refreshCategories();
       return data as BlogCategory;
@@ -217,6 +219,7 @@ export function BlogManager({ initialPosts, initialCategories, initialTags }: Pr
         .select('*')
         .single();
       if (error) throw error;
+      await invalidatePublicCache({ tables: ['blog_tags'] });
       push(`Tag "${name}" added.`, 'success');
       await refreshTags();
       return data as BlogTag;
@@ -328,6 +331,7 @@ export function BlogManager({ initialPosts, initialCategories, initialTags }: Pr
                                 .update(patch)
                                 .eq('id', post.id);
                               if (error) throw error;
+                              await invalidatePublicCache({ tables: ['blog_posts'], slug: post.slug });
                               push(next === 'published' ? 'Published.' : 'Unpublished.', 'success');
                               await refresh();
                             } catch (err) {
@@ -388,6 +392,7 @@ export function BlogManager({ initialPosts, initialCategories, initialTags }: Pr
             // Remove tag joins explicitly; FK is cascade but be defensive.
             await (supabase.from('blog_post_tags') as any).delete().eq('post_id', confirmDelete.id);
             await (supabase.from('blog_posts') as any).delete().eq('id', confirmDelete.id);
+            await invalidatePublicCache({ tables: ['blog_posts', 'blog_post_tags'] });
             push('Post deleted.', 'success');
             setConfirmDelete(null);
             await refresh();
@@ -475,6 +480,7 @@ function BlogEditor({
     const rows = form.tag_ids.map((tagId) => ({ post_id: postId, tag_id: tagId }));
     const { error } = await (supabase.from('blog_post_tags') as any).insert(rows);
     if (error) throw error;
+    await invalidatePublicCache({ tables: ['blog_post_tags'] });
   };
 
   const save = async (publish: boolean) => {
@@ -496,6 +502,7 @@ function BlogEditor({
           .update(payload)
           .eq('id', form.id);
         if (error) throw error;
+        await invalidatePublicCache({ tables: ['blog_posts'], slug: form.slug });
       } else {
         const { data, error } = await (supabase.from('blog_posts') as any)
           .insert(payload)
@@ -503,6 +510,7 @@ function BlogEditor({
           .single();
         if (error) throw error;
         postId = (data as BlogPost).id;
+        await invalidatePublicCache({ tables: ['blog_posts'], slug: form.slug });
       }
       if (postId) {
         await saveTagsForPost(postId);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { invalidatePublicCache } from '@/lib/supabase/admin-cache';
 import type { SiteSetting } from '@/lib/supabase/types';
 import { useToast } from '@/components/admin/toast-provider';
 import { ImageUploader } from '@/components/admin/image-uploader';
@@ -149,6 +150,9 @@ export function SettingsEditor({ initial }: { initial: SiteSetting | null }) {
       };
       const { error } = await (supabase.from('site_settings') as any).upsert(payload);
       if (error) throw error;
+      // Flush the public site cache so the new site title / logo /
+      // favicon / nav height show on the live site immediately.
+      await invalidatePublicCache({ tables: ['site_settings'] });
       push('Settings saved.', 'success');
       router.refresh();
     } catch (err) {
