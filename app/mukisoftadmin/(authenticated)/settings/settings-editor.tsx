@@ -342,7 +342,7 @@ export function SettingsEditor({ initial }: { initial: SiteSetting | null }) {
                   type="url"
                   value={form.canonical_url}
                   onChange={(e) => update('canonical_url', e.target.value)}
-                  placeholder="https://mukisoft.com"
+                  placeholder="https://mukisoft.tech"
                 />
               </div>
             </div>

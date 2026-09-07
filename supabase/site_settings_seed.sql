@@ -42,7 +42,7 @@ insert into public.site_settings (
   'mukitunishat@gmail.com',
   '+8809638957563',
   'Puthia, Rajshahi, Bangladesh',
-  'https://mukisoft.com',
+  'https://mukisoft.tech',
   2021,
   null,
   'MukiSoft Technology — Software, AI & Digital Products',
@@ -50,7 +50,7 @@ insert into public.site_settings (
   'MukiSoft Technology — Software, AI & Digital Products',
   'MukiSoft Technology delivers software, AI, SaaS, design and digital growth capabilities for businesses worldwide.',
   '/og.svg',
-  'https://mukisoft.com',
+  'https://mukisoft.tech',
   null,
   null
 )

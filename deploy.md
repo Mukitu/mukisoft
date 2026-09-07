@@ -205,7 +205,7 @@ Deploy হওয়ার পর:
 ### Step 2: Vercel-এ Domain Add করুন
 
 1. Vercel Dashboard → আপনার Project → **Settings** → **Domains**
-2. আপনার domain লিখুন (যেমন `mukisoft.com`) → **Add**
+2. আপনার domain লিখুন (যেমন `mukisoft.tech`) → **Add**
 3. Vercel আপনাকে DNS records দেবে
 
 ### Step 3: DNS Configure করুন

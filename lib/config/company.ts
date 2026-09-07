@@ -39,7 +39,7 @@ export const CONTACT_PHONE = '+8809638957563';
 export const CONTACT_LOCATION = 'Puthia, Rajshahi, Bangladesh';
 
 /** Official website domain. */
-export const DOMAIN = 'mukisoft.com';
+export const DOMAIN = 'mukisoft.tech';
 
 /** Official founding year. Used site-wide for "since 2021" positioning and the copyright range. */
 export const FOUNDED_YEAR = 2021;
