@@ -3,7 +3,7 @@ const checks = {
   '/en/team':       ['Tauhid Islam', 'Mukitu Islam Nishat'],
   '/bn/team':       ['আমাদের'],
   '/en/about':      ['About MukiSoft', 'Mission'],
-  '/bn/about':      ['আমাদের সম্পর্কে', 'মিশন'],
+  '/bn/about':      ['আমাদের সম্পর্কে', 'লক্ষ্য'],
   '/en/process':    ['Strategy', 'Architecture'],
   '/en/portfolio':  ['Task Management App'],
   '/en/research':   ['Mitigating Transaction-cost'],
