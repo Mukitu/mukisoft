@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#0b0d10"/>
+  <g opacity="0.06">
+    <path d="M0 125 H800 M0 250 H800 M0 375 H800" stroke="#fff" stroke-width="1"/>
+  </g>
+  <text x="60" y="80" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" fill="#fff">LogiQ Fleet</text>
+  <text x="60" y="105" font-family="Inter, system-ui, sans-serif" font-size="13" fill="rgba(255,255,255,0.6)">AI-assisted fleet operations</text>
+  <path d="M60,300 Q200,260 300,290 T500,260 T700,220" fill="none" stroke="#7c5cff" stroke-width="2"/>
+  <circle cx="200" cy="270" r="8" fill="#7c5cff"/>
+  <circle cx="400" cy="280" r="8" fill="#7c5cff"/>
+  <circle cx="600" cy="240" r="8" fill="#7c5cff"/>
+  <rect x="60" y="150" width="220" height="100" rx="12" fill="rgba(124,92,255,0.18)"/>
+  <rect x="300" y="150" width="220" height="100" rx="12" fill="rgba(255,255,255,0.04)"/>
+  <rect x="540" y="150" width="200" height="100" rx="12" fill="rgba(34,211,238,0.16)"/>
+  <rect x="60" y="360" width="680" height="80" rx="12" fill="rgba(255,255,255,0.04)"/>
+</svg>

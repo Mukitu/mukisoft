@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#16191e"/>
+  <g opacity="0.06">
+    <path d="M0 125 H800 M0 250 H800 M0 375 H800" stroke="#fff" stroke-width="1"/>
+  </g>
+  <text x="60" y="80" font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" fill="#fff">CareCompanion</text>
+  <text x="60" y="105" font-family="Inter, system-ui, sans-serif" font-size="13" fill="rgba(255,255,255,0.6)">Patient companion app</text>
+  <g transform="translate(280, 130)">
+    <rect x="0" y="0" width="240" height="340" rx="36" fill="#0b0d10" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+    <rect x="20" y="40" width="200" height="60" rx="10" fill="rgba(255,255,255,0.04)"/>
+    <rect x="20" y="120" width="200" height="40" rx="10" fill="rgba(124,92,255,0.2)"/>
+    <rect x="20" y="180" width="200" height="60" rx="10" fill="rgba(255,255,255,0.04)"/>
+    <rect x="20" y="260" width="100" height="40" rx="10" fill="rgba(34,211,238,0.2)"/>
+    <rect x="140" y="260" width="80" height="40" rx="10" fill="rgba(255,255,255,0.04)"/>
+  </g>
+</svg>
