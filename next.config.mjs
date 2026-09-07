@@ -51,6 +51,40 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=86400, immutable' },
         ],
       },
+      // Next.js hashes JS/CSS chunks at build time. Cache them
+      // aggressively — if the hash changes the URL changes, so the
+      // browser never sees a stale chunk. This is the single biggest
+      // win for repeat visits.
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Image optimization responses are content-addressed by the
+      // requested URL params, so a long cache is safe.
+      {
+        source: '/_next/image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Public static assets in /assets and /images — these are
+      // served verbatim from /public and rarely change. A long max-age
+      // is safe because filename changes are deliberate (we rename
+      // when an asset is updated).
+      {
+        source: '/assets/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/images/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ];
   },
 };

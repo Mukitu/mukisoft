@@ -22,7 +22,7 @@ import { getTranslations, unstable_setRequestLocale } from 'next-intl/server';
 import { isLocale, type Locale } from '@/lib/i18n/config';
 import { applyTranslations, applyJsonTranslation } from '@/lib/i18n/apply-translations';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

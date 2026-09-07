@@ -14,7 +14,7 @@ import { ensureCompanySettings } from '@/lib/config/company.server';
 import { siteConfig } from '@/lib/config/site';
 import { fetchGalleryEventBySlug, fetchPublishedGalleryEvents } from '@/lib/supabase/public';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 type Params = { slug: string; locale: string };
 

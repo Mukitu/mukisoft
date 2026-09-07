@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { company } from '@/lib/config/company';
 import { ensureCompanySettings } from '@/lib/config/company.server';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Case study',

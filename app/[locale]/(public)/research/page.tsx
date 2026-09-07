@@ -11,7 +11,7 @@ import { company } from '@/lib/config/company';
 import { ensureCompanySettings } from '@/lib/config/company.server';
 import { fetchPublishedResearchPapers } from '@/lib/supabase/public';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

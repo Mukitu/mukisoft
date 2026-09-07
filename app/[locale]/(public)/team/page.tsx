@@ -15,7 +15,7 @@ import { fetchPublishedTeam, fetchPublishedLeadership } from '@/lib/supabase/pub
 import { TeamAvatar, FounderImage } from '@/components/ui/brand-image';
 import { ContactChip } from '@/components/ui/contact-chip';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

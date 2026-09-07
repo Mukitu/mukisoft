@@ -18,7 +18,7 @@ import {
 } from '@/lib/supabase/public';
 import { renderRichText } from '@/lib/utils/rich-text';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 type Params = { slug: string; locale: string };
 

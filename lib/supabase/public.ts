@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { createSupabaseServerClient } from './server';
 import { applyTranslations } from '@/lib/i18n/apply-translations';
 import type { Locale } from '@/lib/i18n/config';
@@ -18,6 +19,16 @@ import type {
   SiteSetting,
   TeamMember,
 } from './types';
+
+/**
+ * CDN-level cache TTL for public read fetches. Lower = fresher, but
+ * more Supabase hits. Higher = faster page loads + zero Supabase
+ * load between regenerations, but admin edits take up to TTL to
+ * appear publicly. 60s is a sensible default for marketing content.
+ *
+ * Pages also set their own `export const revalidate = 60` to match.
+ */
+const PUBLIC_CACHE_TTL_SECONDS = 60;
 
 type SupabaseClient = NonNullable<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -53,129 +64,182 @@ async function safeQuery<T>(fn: () => PromiseLike<{ data: T | null; error: { mes
 }
 
 export const fetchSiteSettings = cache(async (locale: Locale = 'en'): Promise<SiteSetting | null> => {
-  const supabase = getClient();
-  if (!supabase) return null;
-  const { data } = await safeQuery<SiteSetting | null>(() =>
-    supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
-  );
-  if (!data) return data;
-  const [translated] = await applyTranslations([data], 'site_setting', locale);
-  return translated ?? data;
+  // unstable_cache wraps the read in a CDN-edge cache. Repeated calls
+  // within PUBLIC_CACHE_TTL_SECONDS return the cached payload without
+  // touching Supabase, so the public site stays fast and resilient
+  // even if Supabase has a hiccup. Locale is part of the cache key
+  // so en and bn get separate entries.
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return null;
+      const { data } = await safeQuery<SiteSetting | null>(() =>
+        supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
+      );
+      if (!data) return data;
+      const [translated] = await applyTranslations([data], 'site_setting', locale);
+      return translated ?? data;
+    },
+    ['site-settings', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['site-settings', locale] },
+  )();
 });
 
 export async function fetchPublishedAbout(locale: Locale = 'en'): Promise<AboutPage | null> {
-  const supabase = getClient();
-  if (!supabase) return null;
-  const { data } = await safeQuery<AboutPage | null>(() =>
-    supabase
-      .from('about_pages')
-      .select('*')
-      .eq('status', 'published')
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  );
-  if (!data) return data;
-  const [translated] = await applyTranslations([data], 'about_page', locale);
-  return translated ?? data;
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return null;
+      const { data } = await safeQuery<AboutPage | null>(() =>
+        supabase
+          .from('about_pages')
+          .select('*')
+          .eq('status', 'published')
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      );
+      if (!data) return data;
+      const [translated] = await applyTranslations([data], 'about_page', locale);
+      return translated ?? data;
+    },
+    ['about-page', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['about-page', locale] },
+  )();
 }
 
 export async function fetchPublishedLeadership(locale: Locale = 'en'): Promise<Leadership[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<Leadership[] | null>(() =>
-    supabase
-      .from('leadership')
-      .select('*')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'leadership_member', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<Leadership[] | null>(() =>
+        supabase
+          .from('leadership')
+          .select('*')
+          .eq('is_published', true)
+          .order('display_order', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'leadership_member', locale);
+    },
+    ['leadership', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['leadership', locale] },
+  )();
 }
 
 export async function fetchPublishedTeam(locale: Locale = 'en'): Promise<TeamMember[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<TeamMember[] | null>(() =>
-    supabase
-      .from('team_members')
-      .select('*')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'team_member', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<TeamMember[] | null>(() =>
+        supabase
+          .from('team_members')
+          .select('*')
+          .eq('is_published', true)
+          .order('display_order', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'team_member', locale);
+    },
+    ['team', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['team', locale] },
+  )();
 }
 
 export async function fetchPublishedProcess(locale: Locale = 'en'): Promise<ProcessStep[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<ProcessStep[] | null>(() =>
-    supabase
-      .from('process_steps')
-      .select('*')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'process_step', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<ProcessStep[] | null>(() =>
+        supabase.from('process_steps').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'process_step', locale);
+    },
+    ['process', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['process', locale] },
+  )();
 }
 
 export async function fetchPublishedCareers(locale: Locale = 'en'): Promise<Career[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<Career[] | null>(() =>
-    supabase
-      .from('careers')
-      .select('*')
-      .eq('is_published', true)
-      .order('created_at', { ascending: false }),
-  );
-  return applyTranslations(data ?? [], 'career_role', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<Career[] | null>(() =>
+        supabase.from('careers').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'career_role', locale);
+    },
+    ['careers', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['careers', locale] },
+  )();
 }
 
 export async function fetchPublishedPortfolio(locale: Locale = 'en'): Promise<PortfolioProject[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<PortfolioProject[] | null>(() =>
-    supabase
-      .from('portfolio_projects')
-      .select('*')
-      .eq('is_published', true)
-      .order('display_order', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'portfolio_project', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<PortfolioProject[] | null>(() =>
+        supabase.from('portfolio_projects').select('*').eq('is_published', true).order('display_order', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'portfolio_project', locale);
+    },
+    ['portfolio', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['portfolio', locale] },
+  )();
 }
 
 export async function fetchPortfolioBySlug(slug: string, locale: Locale = 'en'): Promise<PortfolioProject | null> {
-  const supabase = getClient();
-  if (!supabase) return null;
-  const { data } = await safeQuery<PortfolioProject | null>(() =>
-    (supabase.from('portfolio_projects') as any)
-      .select('*')
-      .eq('slug', slug)
-      .eq('is_published', true)
-      .maybeSingle(),
-  );
-  if (!data) return data;
-  const [translated] = await applyTranslations([data], 'portfolio_project', locale);
-  return translated ?? data;
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return null;
+      const { data } = await safeQuery<PortfolioProject | null>(() =>
+        (supabase.from('portfolio_projects') as any)
+          .select('*')
+          .eq('slug', slug)
+          .eq('is_published', true)
+          .maybeSingle(),
+      );
+      if (!data) return data;
+      const [translated] = await applyTranslations([data], 'portfolio_project', locale);
+      return translated ?? data;
+    },
+    ['portfolio-by-slug', slug, locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['portfolio', `portfolio:${slug}`, locale] },
+  )();
 }
 
 export async function fetchBlogCategories(locale: Locale = 'en'): Promise<BlogCategory[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<BlogCategory[] | null>(() =>
-    (supabase.from('blog_categories') as any).select('*').order('name', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'blog_category', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<BlogCategory[] | null>(() =>
+        (supabase.from('blog_categories') as any).select('*').order('name', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'blog_category', locale);
+    },
+    ['blog-categories', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['blog', locale] },
+  )();
 }
 
 export async function fetchBlogTags(locale: Locale = 'en'): Promise<BlogTag[]> {
-  const supabase = getClient();
-  if (!supabase) return [];
-  const { data } = await safeQuery<BlogTag[] | null>(() =>
-    (supabase.from('blog_tags') as any).select('*').order('name', { ascending: true }),
-  );
-  return applyTranslations(data ?? [], 'blog_tag', locale);
+  return unstable_cache(
+    async () => {
+      const supabase = getClient();
+      if (!supabase) return [];
+      const { data } = await safeQuery<BlogTag[] | null>(() =>
+        (supabase.from('blog_tags') as any).select('*').order('name', { ascending: true }),
+      );
+      return applyTranslations(data ?? [], 'blog_tag', locale);
+    },
+    ['blog-tags', locale],
+    { revalidate: PUBLIC_CACHE_TTL_SECONDS, tags: ['blog', locale] },
+  )();
 }
 
 export async function fetchPublishedBlogPosts(

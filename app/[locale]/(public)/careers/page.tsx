@@ -14,7 +14,7 @@ import { ensureCompanySettings } from '@/lib/config/company.server';
 import { fetchPublishedCareers } from '@/lib/supabase/public';
 import type { Career } from '@/lib/supabase/types';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export async function generateMetadata({
   params,

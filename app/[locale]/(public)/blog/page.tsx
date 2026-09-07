@@ -12,7 +12,7 @@ import { ensureCompanySettings } from '@/lib/config/company.server';
 import { fetchPublishedBlogPosts, fetchBlogCategories } from '@/lib/supabase/public';
 import { renderRichText } from '@/lib/utils/rich-text';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 const PAGE_SIZE = 9;
 

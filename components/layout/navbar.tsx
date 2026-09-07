@@ -89,52 +89,63 @@ export function Navbar({
   }, [open]);
 
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-40 w-full transition-all duration-300',
-        scrolled
-          ? 'border-b border-ink-200/70 bg-white/80 backdrop-blur-xl'
-          : 'border-b border-transparent bg-white/40 backdrop-blur-md',
-      )}
-    >
-      <div className="container-x flex h-16 items-center justify-between gap-6">
-        <Logo src={logoUrl} heightPx={logoHeightPx} />
+    <>
+      <header
+        className={cn(
+          'sticky top-0 z-40 w-full transition-all duration-300',
+          scrolled
+            ? 'border-b border-ink-200/70 bg-white/80 backdrop-blur-xl'
+            : 'border-b border-transparent bg-white/40 backdrop-blur-md',
+        )}
+      >
+        <div className="container-x flex h-16 items-center justify-between gap-6">
+          <Logo src={logoUrl} heightPx={logoHeightPx} />
 
-        <nav className="hidden lg:flex items-center gap-1" aria-label={t('primary')}>
-          {primaryNavigation.map((item) => (
-            <DesktopNavItem
-              key={item.label}
-              item={item}
-              pathname={pathname}
-              label={translateLabel(item.label, t)}
-              descriptionT={tDesc}
-            />
-          ))}
-        </nav>
+          <nav className="hidden lg:flex items-center gap-1" aria-label={t('primary')}>
+            {primaryNavigation.map((item) => (
+              <DesktopNavItem
+                key={item.label}
+                item={item}
+                pathname={pathname}
+                label={translateLabel(item.label, t)}
+                descriptionT={tDesc}
+              />
+            ))}
+          </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
-          <LocaleSwitcher current={locale} />
-          <Button size="sm" href="/contact" variant="primary">
-            {tCommon('startProject')}
-            <Icon name="arrow-right" className="h-4 w-4" />
-          </Button>
+          <div className="hidden lg:flex items-center gap-3">
+            <LocaleSwitcher current={locale} />
+            <Button size="sm" href="/contact" variant="primary">
+              {tCommon('startProject')}
+              <Icon name="arrow-right" className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="lg:hidden flex items-center gap-2">
+            <LocaleSwitcher current={locale} />
+            <button
+              type="button"
+              className="relative z-50 inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-900 shadow-sm transition-colors active:bg-ink-50"
+              aria-expanded={open}
+              aria-controls="mobile-menu"
+              aria-label={open ? tCommon('closeMenu') : tCommon('openMenu')}
+              onClick={() => setOpen((v) => !v)}
+            >
+              <Icon name={open ? 'close' : 'menu'} className="h-5 w-5" />
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div className="lg:hidden flex items-center gap-2">
-          <LocaleSwitcher current={locale} />
-          <button
-            type="button"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-ink-200 bg-white text-ink-900"
-            aria-expanded={open}
-            aria-controls="mobile-menu"
-            aria-label={open ? tCommon('closeMenu') : tCommon('openMenu')}
-            onClick={() => setOpen((v) => !v)}
-          >
-            <Icon name={open ? 'close' : 'menu'} className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
+      {/*
+        The mobile menu is rendered as a SIBLING of <header>, not a
+        child. When the header uses `backdrop-filter`, browsers create
+        a stacking context that traps descendants — `position: fixed`
+        children of a backdrop-filter parent are painted UNDER later
+        siblings in some browsers. Moving the menu outside the header
+        fixes that and also gives us a clean z-index hierarchy
+        (header = z-40, menu = z-50 → button = z-50).
+      */}
       <MobileMenu
         open={open}
         items={primaryNavigation}
@@ -143,7 +154,7 @@ export function Navbar({
         tDesc={tDesc}
         tCommon={tCommon}
       />
-    </header>
+    </>
   );
 }
 
@@ -275,8 +286,13 @@ function MobileMenu({
     <div
       id="mobile-menu"
       className={cn(
-        'lg:hidden fixed inset-x-0 top-16 bottom-0 z-30 origin-top overflow-y-auto bg-white transition-all duration-300',
-        open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        // z-50 (NOT z-30) so the menu sits above the sticky header,
+        // even when the header has backdrop-filter active. The header
+        // has z-40; the menu needs to be higher.
+        'lg:hidden fixed inset-x-0 top-16 z-50 max-h-[calc(100vh-4rem)] origin-top overflow-y-auto bg-white shadow-2xl transition-all duration-300',
+        open
+          ? 'pointer-events-auto translate-y-0 opacity-100'
+          : 'pointer-events-none -translate-y-2 opacity-0',
       )}
       aria-hidden={!open}
     >
